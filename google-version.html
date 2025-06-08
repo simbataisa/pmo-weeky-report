@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảng điều khiển Tiến độ Dự án</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .tab { cursor: pointer; padding: 16px 4px; border-bottom: 2px solid transparent; font-size: 14px; font-weight: 500; color: #6b7280; }
+        .tab:hover { color: #374151; border-bottom-color: #d1d5db; }
+        .tab-active { border-bottom-color: #3b82f6; color: #3b82f6; font-weight: 600; }
+        .status-green { background-color: #dcfce7; color: #166534; }
+        .status-bar-green { background-color: #22c55e; }
+        .status-yellow { background-color: #fef9c3; color: #854d0e; }
+        .status-bar-yellow { background-color: #f59e0b; }
+        .status-red { background-color: #fee2e2; color: #991b1b; }
+        .status-bar-red { background-color: #ef4444; }
+        .status-gray { background-color: #f3f4f6; color: #374151; }
+        .status-bar-gray { background-color: #9ca3af; }
+        .view { display: none; }
+        .view-active { display: block; }
+        .form-input { width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); }
+        .form-label { display: block; font-weight: 500; color: #374151; margin-bottom: 4px; font-size: 14px;}
+        #project-list li { transition: background-color 0.2s; }
+        #project-list li:hover { background-color: #f9fafb; }
+        .action-button {
+            background-color: #16a34a; color: white; font-weight: 600; padding: 8px 16px; border-radius: 8px;
+            display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            transition: background-color 0.2s;
+        }
+        .action-button:hover { background-color: #15803d; }
+        .action-button:disabled { background-color: #14532d; cursor: not-allowed; }
+        .secondary-button {
+             background-color: #4f46e5;
+        }
+        .secondary-button:hover {
+            background-color: #4338ca;
+        }
+        .pdf-page-break {
+            page-break-before: always;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div id="toast-container" class="fixed top-5 right-5 z-50 space-y-3"></div>
+    <div id="app" class="p-4 md:p-8 max-w-7xl mx-auto">
+        <header class="mb-4">
+            <h1 class="text-3xl font-bold text-gray-800">Bảng điều khiển Tiến độ Dự án</h1>
+            <p id="report-date" class="text-gray-500 mt-1">Đang tải dữ liệu...</p>
+        </header>
+        
+        <!-- View Navigator -->
+        <div class="mb-6 bg-white p-4 rounded-xl shadow-sm flex flex-wrap items-center gap-4">
+            <label for="view-year-select" class="form-label mb-0">Xem báo cáo:</label>
+            <select id="view-year-select" class="form-input w-auto" onchange="handleViewFilterChange()"></select>
+            <select id="view-week-select" class="form-input w-auto" onchange="handleViewFilterChange()"></select>
+            <div class="flex-grow"></div>
+            <button onclick="exportAllToPdf()" id="export-pdf-button" class="action-button">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                <span>Export Báo Cáo (PDF)</span>
+            </button>
+        </div>
+
+
+        <div class="border-b border-gray-200 mb-6">
+            <nav class="-mb-px flex space-x-6" aria-label="Tabs">
+                <button onclick="changeTab('dashboard')" id="tab-dashboard" class="tab tab-active">Dashboard Tổng Quan</button>
+                <button onclick="changeTab('details')" id="tab-details" class="tab">Chi Tiết Dự Án</button>
+                <button onclick="changeTab('timeline')" id="tab-timeline" class="tab">Timeline</button>
+                <button onclick="changeTab('edit')" id="tab-edit" class="tab">Chỉnh sửa Báo cáo</button>
+                <button onclick="changeTab('data')" id="tab-data" class="tab">Quản lý Dữ liệu</button>
+            </nav>
+        </div>
+
+        <main>
+            <!-- Dashboard View -->
+            <div id="view-dashboard" class="view view-active">
+                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+                    <!-- Stat cards -->
+                    <div class="bg-white p-5 rounded-xl shadow-sm flex items-center justify-between"><div><p class="text-sm font-medium text-gray-500">Tổng số dự án</p><p id="total-projects" class="text-3xl font-bold text-gray-800">0</p></div><div class="bg-blue-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.5 2H8.6c-.4 0-.8.2-1.1.5-.3.3-.5.7-.5 1.1v12.8c0 .4.2.8.5 1.1.3.3.7.5 1.1.5h9.8c.4 0 .8-.2 1.1-.5.3-.3.5-.7-.5-1.1V6.5L15.5 2z"></path><path d="M3 7.6v12.8c0 .4.2.8.5 1.1.3.3.7.5 1.1.5h9.8"></path><path d="M15 2v5h5"></path></svg></div></div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm flex items-center justify-between"><div><p class="text-sm font-medium text-gray-500">Tốt (Healthy)</p><p id="healthy-projects" class="text-3xl font-bold text-green-600">0</p></div><div class="bg-green-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg></div></div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm flex items-center justify-between"><div><p class="text-sm font-medium text-gray-500">Cần chú ý</p><p id="attention-projects" class="text-3xl font-bold text-yellow-500">0</p></div><div class="bg-yellow-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" x2="12" y1="9" y2="13"></line><line x1="12" x2="12.01" y1="17" y2="17"></line></svg></div></div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm flex items-center justify-between"><div><p class="text-sm font-medium text-gray-500">Cần hành động</p><p id="action-projects" class="text-3xl font-bold text-red-600">0</p></div><div class="bg-red-100 p-3 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" x2="12" y1="8" y2="12"></line><line x1="12" x2="12.01" y1="16" y2="16"></line></svg></div></div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 mb-8">
+                    <div class="lg:col-span-2 bg-white p-5 rounded-xl shadow-sm">
+                        <h3 class="font-semibold text-gray-800 mb-4">Trạng Thái Dự Án</h3>
+                        <div class="h-64 flex items-center justify-center"><canvas id="statusChart"></canvas></div>
+                    </div>
+                    <div class="lg:col-span-3 bg-white p-5 rounded-xl shadow-sm">
+                        <h3 class="font-semibold text-gray-800 mb-4">Các Vấn Đề Nổi Bật & Cần Ra Quyết Định</h3>
+                        <ul id="issues-list" class="space-y-4 text-sm"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Details View -->
+            <div id="view-details" class="view">
+                <div id="details-content" class="bg-white rounded-xl shadow-sm overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-600">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                            <tr>
+                                <th scope="col" class="px-6 py-3">Tên dự án</th><th scope="col" class="px-6 py-3">Quản lý</th><th scope="col" class="px-6 py-3">Tình trạng</th>
+                                <th scope="col" class="px-6 py-3">Cập nhật & Ghi chú</th><th scope="col" class="px-6 py-3">Công việc tuần tới</th>
+                                <th scope="col" class="px-6 py-3">Vấn đề/Rủi ro</th><th scope="col" class="px-6 py-3">Mốc quan trọng</th>
+                            </tr>
+                        </thead>
+                        <tbody id="details-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Timeline View -->
+            <div id="view-timeline" class="view">
+                <div id="timeline-chart-container" class="bg-white rounded-xl shadow-sm p-6 overflow-x-auto">
+                    <!-- Timeline Chart will be rendered here -->
+                </div>
+            </div>
+
+            <!-- Edit View -->
+            <div id="view-edit" class="view">
+                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Form Section -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm">
+                        <h3 id="form-title" class="text-xl font-bold text-gray-800 mb-1">Form Chỉnh sửa Dự án</h3>
+                        <p id="form-subtitle" class="text-sm text-gray-500 mb-4">Thêm, sửa, xóa các dự án cho báo cáo hiện tại.</p>
+                        <form id="project-form" class="space-y-4">
+                            <input type="hidden" id="project-id">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div><label for="form-name" class="form-label">Tên dự án</label><input id="form-name" type="text" class="form-input"></div>
+                                <div><label for="form-pm" class="form-label">Quản lý dự án</label><input id="form-pm" type="text" class="form-input"></div>
+                            </div>
+                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="form-startDate" class="form-label">Ngày bắt đầu</label>
+                                    <input id="form-startDate" type="date" class="form-input">
+                                </div>
+                                <div>
+                                    <label for="form-endDate" class="form-label">Ngày kết thúc</label>
+                                    <input id="form-endDate" type="date" class="form-input">
+                                </div>
+                            </div>
+                             <div>
+                                <label for="form-status" class="form-label">Tình trạng</label>
+                                <select id="form-status" class="form-input">
+                                    <option>Tốt</option><option>Cần chú ý</option><option>Cần hành động</option>
+                                </select>
+                            </div>
+                            <div><label for="form-update" class="form-label">Cập nhật & Ghi chú</label><textarea id="form-update" rows="2" class="form-input"></textarea></div>
+                            <div><label for="form-nextWeek" class="form-label">Công việc tuần tới</label><textarea id="form-nextWeek" rows="2" class="form-input"></textarea></div>
+                            <div><label for="form-risk" class="form-label">Vấn đề / Rủi ro</p><textarea id="form-risk" rows="2" class="form-input"></textarea></div>
+                            <div><label for="form-milestone" class="form-label">Mốc quan trọng</label><input id="form-milestone" type="text" class="form-input"></div>
+                             <div class="flex items-center space-x-3">
+                                <input id="form-isIssue" type="checkbox" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" onchange="toggleIssueDetail()">
+                                <label for="form-isIssue" class="font-medium text-gray-700">Đây là một vấn đề nổi bật?</label>
+                            </div>
+                            <div id="issue-detail-wrapper" class="hidden"><label for="form-issueDetail" class="form-label">Chi tiết vấn đề</label><textarea id="form-issueDetail" rows="2" class="form-input"></textarea></div>
+                             <div class="flex items-center space-x-4 pt-4">
+                                <button type="submit" id="form-submit-button" class="px-5 py-2 bg-blue-600 text-white font-semibold rounded-md shadow-sm hover:bg-blue-700">Thêm Dự Án</button>
+                                <button type="button" id="form-cancel-button" onclick="cancelEdit()" class="hidden px-5 py-2 bg-gray-200 text-gray-700 font-semibold rounded-md hover:bg-gray-300">Hủy</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Project List Section -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm">
+                         <div class="flex justify-between items-center mb-4">
+                             <h3 class="text-xl font-bold text-gray-800">Danh Sách Dự Án</h3>
+                         </div>
+                        <ul id="project-list" class="space-y-2 max-h-[600px] overflow-y-auto">
+                            <!-- Project items will be populated here -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Data Management View -->
+            <div id="view-data" class="view">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-white p-6 rounded-xl shadow-sm space-y-4">
+                        <h3 class="text-xl font-bold text-gray-800">Tạo Báo cáo mới</h3>
+                        <p class="text-sm text-gray-600">Tạo một báo cáo trống cho một tuần mới.</p>
+                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            <select id="new-report-week" class="form-input"></select>
+                            <select id="new-report-month" class="form-input"></select>
+                            <select id="new-report-year" class="form-input"></select>
+                        </div>
+                        <div class="flex items-center space-x-3 pt-2">
+                           <input id="copy-previous-week-data" type="checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                           <label for="copy-previous-week-data" class="font-medium text-gray-700 text-sm">Copy dữ liệu từ tuần trước đó</label>
+                        </div>
+                        <button onclick="createNewReport()" class="action-button secondary-button w-full justify-center mt-2">Tạo Báo cáo Mới</button>
+                    </div>
+                     <div class="bg-white p-6 rounded-xl shadow-sm space-y-4">
+                        <h3 class="text-xl font-bold text-gray-800">Quản lý Dữ liệu</h3>
+                        <div class="space-y-2">
+                             <button onclick="exportToJson()" class="w-full text-left action-button">Export toàn bộ dữ liệu (JSON)</button>
+                             <p class="text-xs text-gray-500">Lưu tất cả báo cáo vào một file JSON để backup hoặc chia sẻ.</p>
+                        </div>
+                         <div class="space-y-2">
+                            <input type="file" id="json-import-input" class="hidden" accept=".json" onchange="importFromJson(event)">
+                            <button onclick="document.getElementById('json-import-input').click()" class="w-full text-left action-button">Import dữ liệu từ JSON</button>
+                            <p class="text-xs text-gray-500">Tải lên file JSON để thay thế toàn bộ dữ liệu hiện tại.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+<script>
+    // --- INITIAL DATA & STATE ---
+    let allReports = {};
+    let currentReportKey = null; // e.g., "2025-23"
+    let myStatusChart = null;
+    let currentlyEditingIndex = null; // To track which project is being edited
+
+    // --- UTILITY FUNCTIONS ---
+    const dayInMs = 1000 * 60 * 60 * 24;
+
+    function getStatusInfo(status) {
+        switch(status) {
+            case 'Tốt': return { colorClass: 'status-green', riskColor: 'green', barClass: 'status-bar-green' };
+            case 'Cần chú ý': return { colorClass: 'status-yellow', riskColor: 'yellow', barClass: 'status-bar-yellow' };
+            case 'Cần hành động': return { colorClass: 'status-red', riskColor: 'red', barClass: 'status-bar-red' };
+            default: return { colorClass: 'status-gray', riskColor: 'gray', barClass: 'status-bar-gray' };
+        }
+    }
+    
+    function getWeekNumber(d) {
+        d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+        d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
+        var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+        var weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
+        return weekNo;
+    }
+
+    function showToast(message, type = 'success') {
+        const toastContainer = document.getElementById('toast-container');
+        
+        const toast = document.createElement('div');
+        const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+        const icon = type === 'success' 
+            ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`
+            : `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
+
+        toast.className = `flex items-center space-x-3 p-4 rounded-lg shadow-lg text-white ${bgColor} transform transition-all duration-300 translate-x-full opacity-0 max-w-sm`;
+        toast.innerHTML = `
+            ${icon}
+            <span>${message}</span>
+        `;
+        
+        toastContainer.appendChild(toast);
+
+        // Animate in
+        setTimeout(() => {
+            toast.classList.remove('translate-x-full', 'opacity-0');
+            toast.classList.add('translate-x-0', 'opacity-100');
+        }, 10);
+
+        // Animate out and remove
+        setTimeout(() => {
+            toast.classList.remove('translate-x-0', 'opacity-100');
+            toast.classList.add('translate-x-full', 'opacity-0');
+            toast.addEventListener('transitionend', () => {
+                toast.remove();
+            });
+        }, 4000);
+    }
+
+    // --- RENDER & VIEW FUNCTIONS ---
+    function renderAllForCurrentView() {
+        const report = allReports[currentReportKey];
+        if (!report) {
+            console.error("No report found for key:", currentReportKey);
+            const emptyProjects = [];
+            renderDetailsTable(emptyProjects);
+            renderIssuesList(emptyProjects);
+            updateStatCards(emptyProjects);
+            createStatusChart(emptyProjects);
+            renderProjectList(emptyProjects);
+            renderTimelineView(emptyProjects);
+            document.getElementById('report-date').textContent = "Không có báo cáo cho lựa chọn này.";
+            return;
+        }
+        renderDetailsTable(report.projects);
+        renderIssuesList(report.projects);
+        updateStatCards(report.projects);
+        createStatusChart(report.projects);
+        renderProjectList(report.projects);
+        renderTimelineView(report.projects);
+        document.getElementById('report-date').textContent = report.reportDate;
+    }
+
+    function renderDetailsTable(projects = []) {
+        const tableBody = document.getElementById('details-table-body');
+        tableBody.innerHTML = projects.map(p => {
+            const statusInfo = getStatusInfo(p.status);
+            return `<tr class="bg-white border-b hover:bg-gray-50"><th scope="row" class="px-6 py-4 font-bold text-gray-900 whitespace-nowrap">${p.name}</th><td class="px-6 py-4">${p.pm}</td><td class="px-6 py-4"><span class="px-2 py-1 text-xs font-medium rounded-full ${statusInfo.colorClass}">${p.status}</span></td><td class="px-6 py-4">${p.update}</td><td class="px-6 py-4">${p.nextWeek}</td><td class="px-6 py-4">${p.risk}</td><td class="px-6 py-4">${p.milestone}</td></tr>`;
+        }).join('');
+    }
+
+    function renderIssuesList(projects = []) {
+        const issuesList = document.getElementById('issues-list');
+        const issues = projects.filter(p => p.isIssue);
+        if (issues.length === 0) {
+            issuesList.innerHTML = '<p class="text-gray-500">Không có vấn đề nổi bật nào.</p>';
+        } else {
+            issuesList.innerHTML = issues.map(item => {
+                const statusInfo = getStatusInfo(item.status);
+                const riskColorClass = statusInfo.riskColor === 'red' ? 'bg-red-500' : (statusInfo.riskColor === 'yellow' ? 'bg-yellow-400' : 'bg-green-500');
+                return `<li class="flex items-start space-x-3"><div class="flex-shrink-0 mt-1"><div class="w-2.5 h-2.5 rounded-full ${riskColorClass}"></div></div><div><p class="font-semibold text-gray-700">${item.name}</p><p class="text-gray-500">${item.issueDetail}</p></div></li>`;
+            }).join('');
+        }
+    }
+
+    function renderProjectList(projects = []) {
+        const list = document.getElementById('project-list');
+        list.innerHTML = projects.map((p, index) => {
+            return `<li class="p-3 border rounded-lg flex justify-between items-center">
+                        <div class="text-sm">
+                            <p class="font-bold text-gray-800">${p.name}</p>
+                            <p class="text-gray-500">${p.pm} - <span class="font-semibold">${p.status}</span></p>
+                        </div>
+                        <div class="space-x-2 flex-shrink-0">
+                             <button onclick="editProject(${index})" class="text-blue-600 hover:text-blue-800 font-semibold text-xs p-1">Sửa</button>
+                             <button onclick="deleteProject(${index})" class="text-red-600 hover:text-red-800 font-semibold text-xs p-1">Xóa</button>
+                        </div>
+                    </li>`;
+        }).join('');
+    }
+
+    function updateStatCards(projects = []) {
+        const statusCounts = projects.reduce((acc, p) => { acc[p.status] = (acc[p.status] || 0) + 1; return acc; }, {});
+        document.getElementById('total-projects').textContent = projects.length;
+        document.getElementById('healthy-projects').textContent = statusCounts['Tốt'] || 0;
+        document.getElementById('attention-projects').textContent = statusCounts['Cần chú ý'] || 0;
+        document.getElementById('action-projects').textContent = statusCounts['Cần hành động'] || 0;
+    }
+
+    function createStatusChart(projects = []) {
+        if (myStatusChart) myStatusChart.destroy();
+        const ctx = document.getElementById('statusChart').getContext('2d');
+        const statusCounts = projects.reduce((acc, p) => { acc[p.status] = (acc[p.status] || 0) + 1; return acc; }, {});
+        myStatusChart = new Chart(ctx, { type: 'doughnut', data: { labels: ['Tốt', 'Cần chú ý', 'Cần hành động'], datasets: [{ data: [statusCounts['Tốt'] || 0, statusCounts['Cần chú ý'] || 0, statusCounts['Cần hành động'] || 0], backgroundColor: ['#22c55e', '#f59e0b', '#ef4444'], borderColor: '#ffffff', borderWidth: 4, hoverOffset: 8 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom', labels: { padding: 20, usePointStyle: true, pointStyle: 'circle' } }, tooltip: { callbacks: { label: (c) => `${c.label}: ${c.parsed} dự án` } } } } });
+    }
+
+    function renderTimelineView(projects = []) {
+        const container = document.getElementById('timeline-chart-container');
+        if (projects.length === 0) {
+            container.innerHTML = '<p class="text-gray-500">Không có dữ liệu dự án để hiển thị.</p>';
+            return;
+        }
+
+        const validProjects = projects.filter(p => p.startDate && p.endDate);
+        if (validProjects.length === 0) {
+            container.innerHTML = '<p class="text-gray-500">Các dự án cần có ngày bắt đầu và kết thúc để hiển thị timeline.</p>';
+            return;
+        }
+        
+        const dates = validProjects.flatMap(p => [new Date(p.startDate), new Date(p.endDate)]);
+        const minDate = new Date(Math.min(...dates));
+        minDate.setDate(1); // Start of the month
+        const maxDate = new Date(Math.max(...dates));
+        maxDate.setMonth(maxDate.getMonth() + 1);
+        maxDate.setDate(0); // End of the month
+
+        const today = new Date();
+        const totalDays = (maxDate - minDate) / dayInMs;
+
+        let monthHeaders = '';
+        let currentDate = new Date(minDate);
+        while (currentDate <= maxDate) {
+            let nextMonth = new Date(currentDate);
+            nextMonth.setMonth(nextMonth.getMonth() + 1);
+            let daysInMonth = (nextMonth - currentDate) / dayInMs;
+            let width = (daysInMonth / totalDays) * 100;
+            monthHeaders += `<div style="width: ${width}%" class="flex-shrink-0 text-center font-semibold text-sm border-r border-gray-200">${currentDate.toLocaleString('vi-VN', { month: 'long', year: 'numeric' })}</div>`;
+            currentDate = nextMonth;
+        }
+
+        let projectRows = '';
+        validProjects.forEach(p => {
+            const startDate = new Date(p.startDate);
+            const endDate = new Date(p.endDate);
+            const offsetDays = (startDate - minDate) / dayInMs;
+            const durationDays = Math.max(1, (endDate - startDate) / dayInMs);
+
+            const left = (offsetDays / totalDays) * 100;
+            const width = (durationDays / totalDays) * 100;
+            
+            const { barClass } = getStatusInfo(p.status);
+
+            const issueIcon = p.isIssue ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-yellow-500 inline-block ml-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.21 3.03-1.742 3.03H4.42c-1.532 0-2.492-1.696-1.742-3.03l5.58-9.92zM10 13a1 1 0 110-2 1 1 0 010 2zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>` : '';
+            
+            projectRows += `
+                <div class="w-48 flex-shrink-0 sticky left-0 bg-white z-10 p-2 text-xs font-medium truncate flex items-center border-t border-gray-200">${p.name} ${issueIcon}</div>
+                <div class="relative h-10 border-t border-gray-200">
+                    <div title="${p.startDate} - ${p.endDate}" class="absolute h-6 top-2 rounded ${barClass}" style="left: ${left}%; width: ${width}%;"></div>
+                </div>
+            `;
+        });
+        
+        let todayLineHtml = '';
+        if (today >= minDate && today <= maxDate) {
+            const todayOffsetDays = (today - minDate) / dayInMs;
+            const todayLeft = (todayOffsetDays / totalDays) * 100;
+            todayLineHtml = `<div class="absolute top-0 bottom-0 border-l-2 border-red-500 z-30" style="left: ${todayLeft}%;">
+                                <div class="absolute -top-4 -translate-x-1/2 text-xs text-red-500 bg-white px-1 rounded">Hôm nay</div>
+                            </div>`;
+        }
+
+        container.innerHTML = `
+            <div class="grid" style="grid-template-columns: 180px 1fr;">
+                <div class="sticky top-0 bg-gray-100 z-20 p-2 font-semibold text-sm border-b-2 border-gray-300">Dự án</div>
+                <div class="sticky top-0 bg-gray-100 z-20 border-b-2 border-gray-300">
+                    <div class="relative h-full">
+                        <div class="flex absolute inset-0">${monthHeaders}</div>
+                        ${todayLineHtml}
+                    </div>
+                </div>
+                ${projectRows}
+            </div>
+        `;
+    }
+
+    function handleViewFilterChange() {
+        const yearSelect = document.getElementById('view-year-select');
+        const weekSelect = document.getElementById('view-week-select');
+        
+        const selectedYear = yearSelect.value;
+        const weeksForYear = Object.keys(allReports)
+            .filter(k => k.startsWith(selectedYear + '-'))
+            .map(k => k.split('-')[1])
+            .sort((a,b) => b-a);
+        
+        const currentWeekSelection = weekSelect.value;
+        weekSelect.innerHTML = weeksForYear.map(w => `<option value="${w}">Tuần ${w.padStart(2, '0')}</option>`).join('');
+
+        if (weeksForYear.includes(currentWeekSelection)) {
+            weekSelect.value = currentWeekSelection;
+        }
+
+        currentReportKey = `${yearSelect.value}-${weekSelect.value}`;
+        if (allReports[currentReportKey]) {
+            renderAllForCurrentView();
+        }
+    }
+
+    function populateViewFilter() {
+        const yearSelect = document.getElementById('view-year-select');
+        
+        const years = [...new Set(Object.keys(allReports).map(k => k.split('-')[0]))].sort((a,b) => b-a);
+        
+        const currentYearSelection = yearSelect.value;
+        yearSelect.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+
+        if(years.includes(currentYearSelection)) {
+            yearSelect.value = currentYearSelection;
+        }
+        
+        handleViewFilterChange();
+    }
+    
+    // --- FORM HANDLING ---
+    function handleFormSubmit(event) {
+        event.preventDefault();
+        const report = allReports[currentReportKey];
+        if (!report) {
+            showToast("Không có báo cáo nào được chọn để chỉnh sửa.", "error");
+            return;
+        }
+
+        const projectDataFromForm = {
+            name: document.getElementById('form-name').value,
+            pm: document.getElementById('form-pm').value,
+            startDate: document.getElementById('form-startDate').value,
+            endDate: document.getElementById('form-endDate').value,
+            status: document.getElementById('form-status').value,
+            update: document.getElementById('form-update').value,
+            nextWeek: document.getElementById('form-nextWeek').value,
+            risk: document.getElementById('form-risk').value,
+            milestone: document.getElementById('form-milestone').value,
+            isIssue: document.getElementById('form-isIssue').checked,
+            issueDetail: document.getElementById('form-issueDetail').value,
+        };
+        
+        if (!projectDataFromForm.name) { showToast("Vui lòng nhập tên dự án.", 'error'); return; }
+
+        if (currentlyEditingIndex !== null) {
+            report.projects[currentlyEditingIndex] = projectDataFromForm;
+        } else {
+            report.projects.push(projectDataFromForm);
+        }
+        
+        cancelEdit();
+        renderAllForCurrentView();
+    }
+    
+    function editProject(index) {
+        currentlyEditingIndex = index;
+        const project = allReports[currentReportKey].projects[index];
+        
+        document.getElementById('form-name').value = project.name;
+        document.getElementById('form-pm').value = project.pm;
+        document.getElementById('form-startDate').value = project.startDate || '';
+        document.getElementById('form-endDate').value = project.endDate || '';
+        document.getElementById('form-status').value = project.status;
+        document.getElementById('form-update').value = project.update;
+        document.getElementById('form-nextWeek').value = project.nextWeek;
+        document.getElementById('form-risk').value = project.risk;
+        document.getElementById('form-milestone').value = project.milestone;
+        document.getElementById('form-isIssue').checked = project.isIssue;
+        document.getElementById('form-issueDetail').value = project.issueDetail;
+        
+        toggleIssueDetail();
+
+        document.getElementById('form-title').textContent = 'Chỉnh sửa dự án';
+        document.getElementById('form-submit-button').textContent = 'Cập nhật Dự án';
+        document.getElementById('form-cancel-button').classList.remove('hidden');
+
+        document.getElementById('project-form').scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    function cancelEdit() {
+        currentlyEditingIndex = null;
+        document.getElementById('project-form').reset();
+        toggleIssueDetail();
+        document.getElementById('form-title').textContent = 'Form Chỉnh sửa Dự án';
+        document.getElementById('form-submit-button').textContent = 'Thêm Dự Án';
+        document.getElementById('form-cancel-button').classList.add('hidden');
+    }
+    
+    function deleteProject(index) {
+        const report = allReports[currentReportKey];
+        if (confirm(`Bạn có chắc muốn xóa dự án "${report.projects[index].name}" không?`)) {
+            report.projects.splice(index, 1);
+            if (currentlyEditingIndex === index) {
+                cancelEdit();
+            }
+            renderAllForCurrentView();
+        }
+    }
+    
+    function toggleIssueDetail() { document.getElementById('issue-detail-wrapper').classList.toggle('hidden', !document.getElementById('form-isIssue').checked); }
+
+    // --- DATA MANAGEMENT FUNCTIONS ---
+    function populateNewReportDateFields() {
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1;
+        const currentWeek = getWeekNumber(now);
+
+        const yearSelect = document.getElementById('new-report-year');
+        const monthSelect = document.getElementById('new-report-month');
+        const weekSelect = document.getElementById('new-report-week');
+        
+        yearSelect.innerHTML = '';
+        for (let i = currentYear + 2; i >= currentYear - 5; i--) {
+            yearSelect.add(new Option(i, i, i === currentYear, i === currentYear));
+        }
+
+        monthSelect.innerHTML = '';
+        for (let i = 1; i <= 12; i++) {
+            monthSelect.add(new Option(`Tháng ${i.toString().padStart(2, '0')}`, i, i === currentMonth, i === currentMonth));
+        }
+
+        weekSelect.innerHTML = '';
+        for (let i = 1; i <= 53; i++) {
+            weekSelect.add(new Option(`Tuần ${i.toString().padStart(2, '0')}`, i.toString().padStart(2, '0'), i === currentWeek, i === currentWeek));
+        }
+    }
+
+    function createNewReport() {
+        const year = document.getElementById('new-report-year').value;
+        const month = document.getElementById('new-report-month').value.toString().padStart(2, '0');
+        const week = document.getElementById('new-report-week').value.toString().padStart(2, '0');
+        const shouldCopy = document.getElementById('copy-previous-week-data').checked;
+        
+        const newKey = `${year}-${week}`;
+        if(allReports[newKey]) {
+            showToast(`Báo cáo cho tuần ${week}, năm ${year} đã tồn tại.`, 'error');
+            return;
+        }
+
+        let projectsToCopy = [];
+        if (shouldCopy) {
+            const previousWeek = parseInt(week) - 1;
+            if (previousWeek > 0) {
+                const previousKey = `${year}-${previousWeek.toString().padStart(2, '0')}`;
+                const previousReport = allReports[previousKey];
+                if (previousReport && previousReport.projects) {
+                    projectsToCopy = JSON.parse(JSON.stringify(previousReport.projects));
+                    showToast(`Đã copy ${projectsToCopy.length} dự án từ tuần ${previousWeek}.`);
+                } else {
+                    showToast(`Không tìm thấy dữ liệu tuần ${previousWeek}. Một báo cáo trống sẽ được tạo.`, 'error');
+                }
+            } else {
+                showToast('Không thể copy từ tuần 0. Một báo cáo trống sẽ được tạo.', 'error');
+            }
+        }
+
+        allReports[newKey] = {
+            reportDate: `Báo cáo Tuần ${week} – tháng ${month}/${year}`,
+            projects: projectsToCopy
+        };
+
+        currentReportKey = newKey;
+        populateViewFilter();
+        renderAllForCurrentView();
+        changeTab('edit');
+        showToast(`Đã tạo báo cáo mới cho tuần ${week}, năm ${year}.`);
+    }
+
+    function exportToJson() {
+        const jsonString = JSON.stringify(allReports, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `project_reports_${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast("Export dữ liệu ra JSON thành công!");
+    }
+    
+    function importFromJson(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                // Basic validation
+                if (typeof importedData !== 'object' || importedData === null) throw new Error("Invalid format");
+                allReports = importedData;
+                populateViewFilter();
+                handleViewFilterChange();
+                showToast("Dữ liệu đã được import thành công!");
+            } catch (err) {
+                showToast("Lỗi: File JSON không hợp lệ.", 'error');
+                console.error(err);
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+    }
+
+    // --- GENERAL & EVENT LISTENERS ---
+    function changeTab(tabName) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('view-active'));
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('tab-active'));
+        document.getElementById(`view-${tabName}`).classList.add('view-active');
+        document.getElementById(`tab-${tabName}`).classList.add('tab-active');
+    }
+    
+    // --- PDF EXPORT FUNCTION (REVISED) ---
+    async function exportAllToPdf() {
+        const exportButton = document.getElementById('export-pdf-button');
+        const originalButtonContent = exportButton.innerHTML;
+        exportButton.disabled = true;
+        exportButton.innerHTML = `
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>Đang xử lý...</span>`;
+        let exportSuccess = false;
+
+        try {
+            const report = allReports[currentReportKey];
+            if (!report) throw new Error("No report selected");
+
+            const printContainer = document.createElement('div');
+            printContainer.style.position = 'absolute';
+            printContainer.style.left = '-9999px';
+            printContainer.style.width = '1122px';
+            
+            // PDF Header
+            const pdfHeader = document.createElement('div');
+            pdfHeader.className = 'p-8';
+            pdfHeader.innerHTML = `<h1 class="text-3xl font-bold text-gray-800">Báo cáo Tiến độ Dự án</h1><p class="text-gray-500 mt-1">${report.reportDate}</p><hr class="my-6 border-gray-300">`;
+            printContainer.appendChild(pdfHeader);
+
+            // Dashboard Content
+            const dashboardTitle = document.createElement('h2');
+            dashboardTitle.className = 'text-2xl font-bold mb-4 px-8';
+            dashboardTitle.textContent = 'Dashboard Tổng Quan';
+            printContainer.appendChild(dashboardTitle);
+            
+            const dashboardContent = document.getElementById('view-dashboard').cloneNode(true);
+            const chartImg = document.createElement('img');
+            chartImg.src = myStatusChart.toBase64Image();
+            const chartContainer = dashboardContent.querySelector('#statusChart').parentElement;
+            chartContainer.innerHTML = ''; 
+            chartContainer.appendChild(chartImg);
+            printContainer.appendChild(dashboardContent);
+
+            // Details Content
+            const detailsHeader = document.createElement('div');
+            detailsHeader.className = 'p-8 pdf-page-break';
+            detailsHeader.innerHTML = `<h2 class="text-2xl font-bold mb-4">Chi Tiết Dự Án</h2>`;
+            printContainer.appendChild(detailsHeader);
+            
+            const detailsContent = document.getElementById('view-details').cloneNode(true);
+            detailsContent.style.display = 'block'; 
+            printContainer.appendChild(detailsContent);
+
+            // Timeline Content
+            const timelineHeader = document.createElement('div');
+            timelineHeader.className = 'p-8 pdf-page-break';
+            timelineHeader.innerHTML = `<h2 class="text-2xl font-bold mb-4">Timeline Dự Án</h2>`;
+            printContainer.appendChild(timelineHeader);
+
+            const timelineContent = document.getElementById('view-timeline').cloneNode(true);
+            timelineContent.style.display = 'block';
+            printContainer.appendChild(timelineContent);
+            
+            document.body.appendChild(printContainer);
+
+            const options = {
+                margin: 0.5,
+                filename: `Bao-Cao-Tien-Do-${currentReportKey}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, logging: false, width: printContainer.scrollWidth, height: printContainer.scrollHeight },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' },
+                pagebreak: { mode: ['css', 'legacy'], before: '.pdf-page-break' }
+            };
+
+            await html2pdf().from(printContainer).set(options).save();
+            exportSuccess = true;
+
+        } catch (err) {
+            console.error("PDF export failed:", err);
+            showToast("Đã có lỗi xảy ra khi xuất PDF.", 'error');
+        } finally {
+            document.body.removeChild(printContainer);
+            exportButton.innerHTML = originalButtonContent;
+            exportButton.disabled = false;
+            if(exportSuccess) {
+                showToast("Export báo cáo ra PDF thành công!");
+            }
+        }
+    }
+    
+    // --- INITIALIZATION ---
+    function initialize() {
+        const initialData = { "2025-23": { reportDate: "Báo cáo Tuần 23 – tháng 06/2025", projects: [{"name":"Nền tảng cho thuê xe","pm":"Phạm Hoàng Hải","status":"Tốt","update":"Đã hoàn thiện thuê xe tự lái. Đang phát triển dịch vụ Chauffeur. BO yêu cầu nâng cấp thêm.","nextWeek":"Go-live giá lễ Tết. Cập nhật Vinxe miễn sạc. Go-live giá thuê xe sân bay.","risk":"Rủi ro trễ timeline (15/07) tích hợp ví điện tử. Chưa rõ yêu cầu luồng vận hành Chauffeur.","milestone":"Go-live chính sách giá thuê xe sân bay","isIssue":true,"issueDetail":"Việc tích hợp ví điện tử có thể không đạt timeline 15/07. Cần làm rõ yêu cầu luồng vận hành của BO cho đơn Chauffeur.", "startDate": "2025-01-01", "endDate": "2025-07-30" },{"name":"Nền tảng mua bán xe cũ","pm":"PO Nguyễn Đăng Thái","status":"Cần chú ý","update":"Đã thông luồng Dealer đăng tin và nhận lead (cần sửa UI). Đang setup nền tảng VHM cho Cara.","nextWeek":"09/06: Xác định cấu phần & bước tiếp theo.","risk":"Rủi ro trễ deadline do phụ thuộc đánh giá ANBM và scope lớn.","milestone":"09/06: Xác định cấu phần","isIssue":true,"issueDetail":"Có rủi ro trễ deadline do phụ thuộc vào thời gian đánh giá ANBM và scope lớn trong khi nguồn lực IT hạn chế.", "startDate": "2025-01-01", "endDate": "2025-08-30" },{"name":"Hệ thống Dealer portal","pm":"PO Nguyễn Đăng Thái","status":"Cần chú ý","update":"Đang thực hiện customize VHM Marketplace.","nextWeek":"Tiếp tục customize VHM Marketplace.","risk":"Cần align lại timeline với Cara do có nhiều request mới.","milestone":"20/06: Ra mắt bản MVP","isIssue":true,"issueDetail":"Cần thống nhất lại timeline với Cara vì có nhiều yêu cầu mới sau phiên bản MVP ngày 20/06.", "startDate": "2025-04-01", "endDate": "2025-06-20"},{"name":"Hệ thống Quản lý kho xe","pm":"Phạm Hoàng Hải","status":"Tốt","update":"Đã bàn giao Vận hành IT. Đang chạy song song đánh giá ANBM.","nextWeek":"Đánh giá lại process ANBM.","risk":"Không có","milestone":"Đã bàn giao Vận hành IT","isIssue":false,"issueDetail":"", "startDate": "2025-01-01", "endDate": "2025-06-01" },{"name":"Hệ thống Quản lý vận hành xe","pm":"PO Nguyễn Đăng Thái","status":"Cần hành động","update":"Đã chốt yêu cầu với Vận hành. Dự án đã kick off và chia phase.","nextWeek":"Kick off dự án vào 09/06/2025.","risk":"Không có","milestone":"Phase 1: Bàn giao T8","isIssue":false,"issueDetail":"", "startDate": "2025-06-09", "endDate": "2025-08-31" }] } };
+        allReports = initialData;
+        
+        Chart.defaults.animation = false;
+        
+        populateViewFilter();
+        handleViewFilterChange();
+        populateNewReportDateFields();
+        
+        document.getElementById('project-form').addEventListener('submit', handleFormSubmit);
+    }
+    
+    window.onload = initialize;
+</script>
+</body>
+</html>
