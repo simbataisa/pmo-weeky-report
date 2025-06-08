@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -200,6 +201,10 @@
                         <div class="space-y-2">
                              <button onclick="exportToJson()" class="w-full text-left action-button">Export toàn bộ dữ liệu (JSON)</button>
                              <p class="text-xs text-gray-500">Lưu tất cả báo cáo vào một file JSON để backup hoặc chia sẻ.</p>
+                        </div>
+                        <div class="space-y-2">
+                            <button onclick="exportToExcel()" class="w-full text-left action-button">Export toàn bộ dữ liệu (Excel)</button>
+                            <p class="text-xs text-gray-500">Lưu tất cả báo cáo vào một file Excel (mỗi tuần một sheet).</p>
                         </div>
                          <div class="space-y-2">
                             <input type="file" id="json-import-input" class="hidden" accept=".json" onchange="importFromJson(event)">
@@ -632,6 +637,47 @@
         URL.revokeObjectURL(url);
         showToast("Export dữ liệu ra JSON thành công!");
     }
+
+    function exportToExcel() {
+        const wb = XLSX.utils.book_new();
+        const sortedReportKeys = Object.keys(allReports).sort();
+
+        sortedReportKeys.forEach(reportKey => {
+            const report = allReports[reportKey];
+            if (report && report.projects) {
+                // Prepare data for sheet: Add headers
+                const sheetData = [
+                    ["Tên dự án", "Quản lý", "Tình trạng", "Cập nhật & Ghi chú", "Công việc tuần tới", "Vấn đề/Rủi ro", "Mốc quan trọng", "Ngày bắt đầu", "Ngày kết thúc", "Vấn đề nổi bật?", "Chi tiết vấn đề"]
+                ];
+                report.projects.forEach(p => {
+                    sheetData.push([
+                        p.name || '',
+                        p.pm || '',
+                        p.status || '',
+                        p.update || '',
+                        p.nextWeek || '',
+                        p.risk || '',
+                        p.milestone || '',
+                        p.startDate || '',
+                        p.endDate || '',
+                        p.isIssue ? 'Có' : 'Không',
+                        p.issueDetail || ''
+                    ]);
+                });
+
+                const ws = XLSX.utils.aoa_to_sheet(sheetData);
+                XLSX.utils.book_append_sheet(wb, ws, reportKey); // Use reportKey (e.g., "2025-23") as sheet name
+            }
+        });
+
+        if (wb.SheetNames.length === 0) {
+            showToast("Không có dữ liệu để export.", 'error');
+            return;
+        }
+
+        XLSX.writeFile(wb, `project_reports_${new Date().toISOString().slice(0,10)}.xlsx`);
+        showToast("Export dữ liệu ra Excel thành công!");
+    }
     
     function importFromJson(event) {
         const file = event.target.files[0];
@@ -667,7 +713,7 @@
     // --- PDF EXPORT FUNCTION (REVISED) ---
     async function exportAllToPdf() {
         const exportButton = document.getElementById('export-pdf-button');
-        const originalButtonContent = exportButton.innerHTML;
+        const originalButtonContent = exportButton.innerHTML; // Captured here
         exportButton.disabled = true;
         exportButton.innerHTML = `
             <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -676,12 +722,13 @@
             </svg>
             <span>Đang xử lý...</span>`;
         let exportSuccess = false;
+        let printContainer; // Declare printContainer here
 
         try {
             const report = allReports[currentReportKey];
             if (!report) throw new Error("No report selected");
 
-            const printContainer = document.createElement('div');
+            printContainer = document.createElement('div'); // Assign here
             printContainer.style.position = 'absolute';
             printContainer.style.left = '-9999px';
             printContainer.style.width = '1122px';
@@ -744,8 +791,10 @@
             console.error("PDF export failed:", err);
             showToast("Đã có lỗi xảy ra khi xuất PDF.", 'error');
         } finally {
-            document.body.removeChild(printContainer);
-            exportButton.innerHTML = originalButtonContent;
+            if (document.body.contains(printContainer)) { // Check if printContainer was added
+                 document.body.removeChild(printContainer);
+            }
+            exportButton.innerHTML = originalButtonContent; // Restored here
             exportButton.disabled = false;
             if(exportSuccess) {
                 showToast("Export báo cáo ra PDF thành công!");
