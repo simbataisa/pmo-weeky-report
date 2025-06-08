@@ -379,7 +379,7 @@
             nextMonth.setMonth(nextMonth.getMonth() + 1);
             let daysInMonth = (nextMonth - currentDate) / dayInMs;
             let width = (daysInMonth / totalDays) * 100;
-            monthHeaders += `<div style="width: ${width}%" class="flex-shrink-0 text-center font-semibold text-sm border-r border-gray-200">${currentDate.toLocaleString('vi-VN', { month: 'long', year: 'numeric' })}</div>`;
+            monthHeaders += `<div style="width: ${width}%" class="flex-shrink-0 text-center font-semibold text-sm border-r border-gray-200 h-full flex items-center justify-center">${currentDate.toLocaleString('vi-VN', { month: 'long', year: 'numeric' })}</div>`;
             currentDate = nextMonth;
         }
 
@@ -408,22 +408,27 @@
         let todayLineHtml = '';
         if (today >= minDate && today <= maxDate) {
             const todayOffsetDays = (today - minDate) / dayInMs;
-            const todayLeft = (todayOffsetDays / totalDays) * 100;
-            todayLineHtml = `<div class="absolute top-0 bottom-0 border-l-2 border-red-500 z-30" style="left: ${todayLeft}%;">
-                                <div class="absolute -top-4 -translate-x-1/2 text-xs text-red-500 bg-white px-1 rounded">Hôm nay</div>
-                            </div>`;
+            const todayLeftPercent = (todayOffsetDays / totalDays) * 100;
+            todayLineHtml = `<div class="absolute top-0 bottom-0 z-30" style="left: calc(180px + (100% - 180px) * ${todayLeftPercent / 100});">
+                                <div class="w-0.5 h-full bg-red-500/70"></div>
+                                <div class="absolute top-0 -translate-x-1/2 text-xs text-red-500 bg-white px-1 rounded">Hôm nay</div>
+                             </div>`;
         }
 
         container.innerHTML = `
-            <div class="grid" style="grid-template-columns: 180px 1fr;">
-                <div class="sticky top-0 bg-gray-100 z-20 p-2 font-semibold text-sm border-b-2 border-gray-300">Dự án</div>
-                <div class="sticky top-0 bg-gray-100 z-20 border-b-2 border-gray-300">
-                    <div class="relative h-full">
-                        <div class="flex absolute inset-0">${monthHeaders}</div>
-                        ${todayLineHtml}
+            <div class="relative">
+                <div class="grid" style="grid-template-columns: 180px 1fr;">
+                    <!-- Header: Project Name -->
+                    <div class="sticky top-0 bg-gray-100 z-20 p-2 font-semibold text-sm border-b-2 border-gray-300 h-10 flex items-center">Dự án</div>
+                    <!-- Header: Timeline -->
+                    <div class="sticky top-0 bg-gray-100 z-20 border-b-2 border-gray-300 h-10">
+                        <div class="flex h-full">${monthHeaders}</div>
                     </div>
+                    <!-- Project Rows -->
+                    ${projectRows}
                 </div>
-                ${projectRows}
+                <!-- Today Line: Positioned relative to the main container -->
+                ${todayLineHtml}
             </div>
         `;
     }
