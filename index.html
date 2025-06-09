@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Báo Cáo Tuần - Tiến Độ Dự Án</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-chart-line"></i> Báo Cáo Tuần - Tiến Độ Dự Án</h1>
+            <div class="week-info">
+                <span id="current-week">Tuần 23 - tháng 06/2025</span>
+                <button class="btn-export" onclick="exportReport()">
+                    <i class="fas fa-download"></i> Export Báo Cáo (PDF)
+                </button>
+            </div>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" onclick="showTab('dashboard')">Dashboard Tổng Quan</button>
+            <button class="tab-btn" onclick="showTab('projects')">Chi Tiết Dự Án</button>
+            <button class="tab-btn" onclick="showTab('timeline')">Timeline</button>
+            <button class="tab-btn" onclick="showTab('settings')">Cài Đặt</button>
+        </nav>
+
+        <div id="dashboard" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon blue">
+                        <i class="fas fa-folder"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Tổng số dự án</h3>
+                        <span class="stat-number" id="total-projects">5</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Tốt (Healthy)</h3>
+                        <span class="stat-number" id="healthy-projects">2</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon yellow">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Cần chú ý</h3>
+                        <span class="stat-number" id="warning-projects">2</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon red">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>Cần hành động</h3>
+                        <span class="stat-number" id="critical-projects">1</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="chart-container">
+                    <h3>Trạng Thái Dự Án</h3>
+                    <div class="pie-chart">
+                        <canvas id="statusChart" width="300" height="300"></canvas>
+                    </div>
+                    <div class="chart-legend">
+                        <div class="legend-item">
+                            <span class="legend-color green"></span>
+                            <span>Tốt</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color yellow"></span>
+                            <span>Cần chú ý</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color red"></span>
+                            <span>Cần hành động</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="issues-container">
+                    <h3>Các Vấn Đề Nổi Bật & Cần Ra Quyết Định</h3>
+                    <div class="issues-list">
+                        <div class="issue-item green">
+                            <div class="issue-icon">
+                                <i class="fas fa-arrow-up"></i>
+                            </div>
+                            <div class="issue-content">
+                                <h4>Nền tảng cho thuê xe</h4>
+                                <p>Việc tích hợp vị điện tử có thể không đạt timeline 15/07. Cần làm rõ yêu cầu lương vận hành của BO cho đơn Chauffeur.</p>
+                            </div>
+                        </div>
+                        <div class="issue-item yellow">
+                            <div class="issue-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="issue-content">
+                                <h4>Nền tảng mua bán xe cũ</h4>
+                                <p>Có rủi ro trễ deadline do phụ thuộc vào thời gian đánh giá ANBM và scope lớn trong khi nguồn lực IT hạn chế.</p>
+                            </div>
+                        </div>
+                        <div class="issue-item yellow">
+                            <div class="issue-icon">
+                                <i class="fas fa-exclamation"></i>
+                            </div>
+                            <div class="issue-content">
+                                <h4>Hệ thống Dealer portal</h4>
+                                <p>Cần thông nhất lại timeline với Cara vì có nhiều yêu cầu mới sau phiên bản MVP ngày 20/06.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="projects" class="tab-content">
+            <div class="projects-header">
+                <h2>Chi Tiết Các Dự Án</h2>
+                <button class="btn-add" onclick="addProject()">
+                    <i class="fas fa-plus"></i> Thêm Dự Án
+                </button>
+            </div>
+            <div class="table-container">
+                <table class="projects-table" id="projects-table">
+                    <thead>
+                        <tr>
+                            <th>Tên Dự Án</th>
+                            <th>Quản Lý</th>
+                            <th>Tình Trạng</th>
+                            <th>Cấp Nhật & Chi Chú</th>
+                            <th>Công Việc Tuần Tới</th>
+                            <th>Vấn Đề/Rủi Ro</th>
+                            <th>Mức Quan Trọng</th>
+                            <th>Hành Động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="projects-table-body">
+                        <!-- Projects will be dynamically loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="timeline" class="tab-content">
+            <h2>Timeline Dự Án</h2>
+            <div class="gantt-container">
+                <div class="gantt-header">
+                    <div class="gantt-project-column">Dự án</div>
+                    <div class="gantt-timeline-header" id="gantt-timeline-header">
+                        <!-- Timeline months will be generated here -->
+                    </div>
+                </div>
+                <div class="gantt-body" id="gantt-body">
+                    <!-- Gantt chart rows will be generated here -->
+                    <div class="gantt-today-line" id="gantt-today-line"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="settings" class="tab-content">
+            <h2>Cài Đặt Báo Cáo</h2>
+            <div class="settings-form">
+                <div class="form-group">
+                    <label for="report-week">Tuần báo cáo:</label>
+                    <select id="report-week">
+                        <option value="23">Tuần 23</option>
+                        <option value="24">Tuần 24</option>
+                        <option value="25">Tuần 25</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="report-year">Năm:</label>
+                    <select id="report-year">
+                        <option value="2025">2025</option>
+                        <option value="2024">2024</option>
+                    </select>
+                </div>
+                <button class="btn-save" onclick="saveSettings()">
+                    <i class="fas fa-save"></i> Lưu Cài Đặt
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for adding/editing projects -->
+    <div id="projectModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 id="modal-title">Thêm Dự Án Mới</h2>
+            <form id="project-form">
+                <div class="form-group">
+                    <label for="project-name">Tên dự án:</label>
+                    <input type="text" id="project-name" required>
+                </div>
+                <div class="form-group">
+                    <label for="project-manager">Quản lý:</label>
+                    <input type="text" id="project-manager" required>
+                </div>
+                <div class="form-group">
+                    <label for="project-status">Trạng thái:</label>
+                    <select id="project-status" required>
+                        <option value="healthy">Tốt (Healthy)</option>
+                        <option value="warning">Cần chú ý</option>
+                        <option value="critical">Cần hành động</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="project-description">Cấp nhật & Chi chú:</label>
+                    <textarea id="project-description" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="project-next-tasks">Công việc tuần tới:</label>
+                    <textarea id="project-next-tasks" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="project-risks">Vấn đề/Rủi ro:</label>
+                    <textarea id="project-risks" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="project-priority">Mức quan trọng:</label>
+                    <select id="project-priority" required>
+                        <option value="high">Cao</option>
+                        <option value="medium">Trung bình</option>
+                        <option value="low">Thấp</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="project-solutions">Cách giải quyết:</label>
+                    <textarea id="project-solutions" rows="3"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel" onclick="closeModal()">Hủy</button>
+                    <button type="submit" class="btn-save">Lưu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
