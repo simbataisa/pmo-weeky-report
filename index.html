@@ -188,6 +188,19 @@
                 <button class="btn-save" onclick="saveSettings()">
                     <i class="fas fa-save"></i> Lưu Cài Đặt
                 </button>
+                
+                <div class="data-management">
+                    <h3>Quản Lý Dữ Liệu</h3>
+                    <div class="data-buttons">
+                        <button class="btn-export-data" onclick="exportData()">
+                            <i class="fas fa-download"></i> Export Dữ Liệu (JSON)
+                        </button>
+                        <button class="btn-import-data" onclick="document.getElementById('import-file').click()">
+                            <i class="fas fa-upload"></i> Import Dữ Liệu (JSON)
+                        </button>
+                        <input type="file" id="import-file" accept=".json" style="display: none;" onchange="importData(event)">
+                    </div>
+                </div>
             </div>
         </div>
     </div>

@@ -95,39 +95,49 @@ function renderGanttChart() {
     ganttHeader.innerHTML = '';
     ganttBody.innerHTML = '';
     
-    // Create and add the today line
-    const todayLine = document.createElement('div');
-    todayLine.className = 'gantt-today-line';
-    todayLine.id = 'gantt-today-line';
-    ganttBody.appendChild(todayLine);
-    
-    // Generate months for 2025
+    // Generate months for 2025 with proper date calculations
     const months = [
-        'tháng 1 năm 2025', 'tháng 2 năm 2025', 'tháng 3 năm 2025',
-        'tháng 4 năm 2025', 'tháng 5 năm 2025', 'tháng 6 năm 2025',
-        'tháng 7 năm 2025', 'tháng 8 năm 2025', 'tháng 9 năm 2025',
-        'tháng 10 năm 2025', 'tháng 11 năm 2025', 'tháng 12 năm 2025'
+        { name: 'tháng 1 năm 2025', days: 31, startDate: new Date('2025-01-01') },
+        { name: 'tháng 2 năm 2025', days: 28, startDate: new Date('2025-02-01') },
+        { name: 'tháng 3 năm 2025', days: 31, startDate: new Date('2025-03-01') },
+        { name: 'tháng 4 năm 2025', days: 30, startDate: new Date('2025-04-01') },
+        { name: 'tháng 5 năm 2025', days: 31, startDate: new Date('2025-05-01') },
+        { name: 'tháng 6 năm 2025', days: 30, startDate: new Date('2025-06-01') },
+        { name: 'tháng 7 năm 2025', days: 31, startDate: new Date('2025-07-01') },
+        { name: 'tháng 8 năm 2025', days: 31, startDate: new Date('2025-08-01') },
+        { name: 'tháng 9 năm 2025', days: 30, startDate: new Date('2025-09-01') },
+        { name: 'tháng 10 năm 2025', days: 31, startDate: new Date('2025-10-01') },
+        { name: 'tháng 11 năm 2025', days: 30, startDate: new Date('2025-11-01') },
+        { name: 'tháng 12 năm 2025', days: 31, startDate: new Date('2025-12-01') }
     ];
     
-    // Create month headers
+    // Create month headers with proportional widths
+    const totalDays = months.reduce((sum, month) => sum + month.days, 0);
     months.forEach(month => {
         const monthDiv = document.createElement('div');
         monthDiv.className = 'gantt-month';
-        monthDiv.textContent = month;
+        monthDiv.textContent = month.name;
+        monthDiv.style.flex = `0 0 ${(month.days / totalDays) * 100}%`;
         ganttHeader.appendChild(monthDiv);
     });
     
     // Create project rows
     projects.forEach(project => {
-        const row = createGanttRow(project);
+        const row = createGanttRow(project, months, totalDays);
         ganttBody.appendChild(row);
     });
     
-    // Position today line
-    positionTodayLine(todayLine);
+    // Create and position today line after a short delay to ensure layout is complete
+    // setTimeout(() => {
+    //     const todayLine = document.createElement('div');
+    //     todayLine.className = 'gantt-today-line';
+    //     todayLine.id = 'gantt-today-line';
+    //     ganttBody.appendChild(todayLine);
+    //     positionTodayLine(todayLine, months, totalDays);
+    // }, 100);
 }
 
-function createGanttRow(project) {
+function createGanttRow(project, months, totalDays) {
     const row = document.createElement('div');
     row.className = 'gantt-row';
     
@@ -143,15 +153,16 @@ function createGanttRow(project) {
     const timeline = document.createElement('div');
     timeline.className = 'gantt-timeline';
     
-    // Create month columns
-    for (let i = 0; i < 12; i++) {
+    // Create month columns with proportional widths
+    months.forEach(month => {
         const monthColumn = document.createElement('div');
         monthColumn.className = 'gantt-month-column';
+        monthColumn.style.flex = `0 0 ${(month.days / totalDays) * 100}%`;
         timeline.appendChild(monthColumn);
-    }
+    });
     
     // Create and position the gantt bar
-    const ganttBar = createGanttBar(project);
+    const ganttBar = createGanttBar(project, totalDays);
     timeline.appendChild(ganttBar);
     
     row.appendChild(projectInfo);
@@ -160,7 +171,7 @@ function createGanttRow(project) {
     return row;
 }
 
-function createGanttBar(project) {
+function createGanttBar(project, totalDays) {
     const bar = document.createElement('div');
     bar.className = `gantt-bar ${project.status}`;
     
@@ -168,9 +179,7 @@ function createGanttBar(project) {
     const startDate = new Date(project.startDate);
     const endDate = new Date(project.endDate);
     const yearStart = new Date('2025-01-01');
-    const yearEnd = new Date('2025-12-31');
     
-    const totalDays = (yearEnd - yearStart) / (1000 * 60 * 60 * 24);
     const startDays = (startDate - yearStart) / (1000 * 60 * 60 * 24);
     const durationDays = (endDate - startDate) / (1000 * 60 * 60 * 24);
     
@@ -197,24 +206,24 @@ function createGanttBar(project) {
     return bar;
 }
 
-function positionTodayLine(todayLine) {
+function positionTodayLine(todayLine, months, totalDays) {
     // Set today as June 9, 2025
     const today = new Date('2025-06-09');
     const yearStart = new Date('2025-01-01');
-    const yearEnd = new Date('2025-12-31');
     
-    const totalDays = (yearEnd - yearStart) / (1000 * 60 * 60 * 24);
-    const todayDays = (today - yearStart) / (1000 * 60 * 60 * 24);
+    // Calculate days from year start to today
+    const daysFromStart = (today - yearStart) / (1000 * 60 * 60 * 24);
     
-    // Calculate percentage within the timeline area only
-    const leftPercent = Math.max(0, Math.min(100, (todayDays / totalDays) * 100));
+    // Calculate percentage position within the timeline
+    const positionPercent = (daysFromStart / totalDays) * 100;
     
     // Position relative to the gantt-body (timeline area only)
     const ganttBody = document.querySelector('.gantt-body');
     if (ganttBody) {
         const bodyWidth = ganttBody.offsetWidth;
         const timelineWidth = bodyWidth - 250; // Subtract project column width
-        const todayPosition = 250 + (leftPercent / 100) * timelineWidth;
+        const todayPosition = 250 + (positionPercent / 100) * timelineWidth;
+        
         todayLine.style.left = `${todayPosition}px`;
     }
 }
@@ -524,6 +533,89 @@ function saveSettings() {
     document.getElementById('current-week').textContent = `Tuần ${week} - tháng 06/${year}`;
     
     alert('Cài đặt đã được lưu!');
+}
+
+// Export data to JSON
+function exportData() {
+    const data = {
+        projects: projects,
+        settings: {
+            week: document.getElementById('report-week').value,
+            year: document.getElementById('report-year').value,
+            exportDate: new Date().toISOString()
+        },
+        version: '1.0'
+    };
+    
+    const jsonString = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `weekly-report-data-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    alert('Dữ liệu đã được xuất thành công!');
+}
+
+// Import data from JSON
+function importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            
+            // Validate data structure
+            if (!data.projects || !Array.isArray(data.projects)) {
+                throw new Error('Định dạng file không hợp lệ: thiếu mảng projects');
+            }
+            
+            // Validate each project has required fields
+            const requiredFields = ['id', 'name', 'manager', 'status'];
+            for (const project of data.projects) {
+                for (const field of requiredFields) {
+                    if (!project.hasOwnProperty(field)) {
+                        throw new Error(`Dự án thiếu trường bắt buộc: ${field}`);
+                    }
+                }
+            }
+            
+            // Import projects
+            projects = data.projects;
+            
+            // Import settings if available
+            if (data.settings) {
+                if (data.settings.week) {
+                    document.getElementById('report-week').value = data.settings.week;
+                }
+                if (data.settings.year) {
+                    document.getElementById('report-year').value = data.settings.year;
+                }
+            }
+            
+            // Refresh the display
+            renderProjectsTable();
+            renderGanttChart();
+            updateStats();
+            
+            alert(`Đã import thành công ${data.projects.length} dự án!`);
+            
+        } catch (error) {
+            alert(`Lỗi khi import dữ liệu: ${error.message}`);
+        }
+    };
+    
+    reader.readAsText(file);
+    
+    // Reset file input
+    event.target.value = '';
 }
 
 // Close modal when clicking outside
