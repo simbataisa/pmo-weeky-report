@@ -659,7 +659,7 @@ header h1 i {
 }
 
 .gantt-today-line::before {
-    content: 'Hôm nay';
+    /* content: '▼'; */
     position: absolute;
     top: -35px;
     left: -30px;

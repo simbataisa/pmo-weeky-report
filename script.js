@@ -81,10 +81,29 @@ document.addEventListener('DOMContentLoaded', function() {
     drawStatusChart();
     updateCurrentWeek();
     renderGanttChart();
-    
+
     // Add form submit handler
     document.getElementById('project-form').addEventListener('submit', handleProjectSubmit);
 });
+
+// Generate months for 2025 with proper date calculations
+const months = [
+    { name: '01-2025', days: 31, startDate: new Date('2025-01-01') },
+    { name: '02-2025', days: 28, startDate: new Date('2025-02-01') },
+    { name: '03-2025', days: 31, startDate: new Date('2025-03-01') },
+    { name: '04-2025', days: 30, startDate: new Date('2025-04-01') },
+    { name: '05-2025', days: 31, startDate: new Date('2025-05-01') },
+    { name: '06-2025', days: 30, startDate: new Date('2025-06-01') },
+    { name: '07-2025', days: 31, startDate: new Date('2025-07-01') },
+    { name: '08-2025', days: 31, startDate: new Date('2025-08-01') },
+    { name: '09-2025', days: 30, startDate: new Date('2025-09-01') },
+    { name: '10-2025', days: 31, startDate: new Date('2025-10-01') },
+    { name: '11-2025', days: 30, startDate: new Date('2025-11-01') },
+    { name: '12-2025', days: 31, startDate: new Date('2025-12-01') }
+];
+
+// Create month headers with proportional widths
+const totalDays = months.reduce((sum, month) => sum + month.days, 0);
 
 // Gantt Chart functions
 function renderGanttChart() {
@@ -94,25 +113,7 @@ function renderGanttChart() {
     // Clear existing content
     ganttHeader.innerHTML = '';
     ganttBody.innerHTML = '';
-    
-    // Generate months for 2025 with proper date calculations
-    const months = [
-        { name: '01-2025', days: 31, startDate: new Date('2025-01-01') },
-        { name: '02-2025', days: 28, startDate: new Date('2025-02-01') },
-        { name: '03-2025', days: 31, startDate: new Date('2025-03-01') },
-        { name: '04-2025', days: 30, startDate: new Date('2025-04-01') },
-        { name: '05-2025', days: 31, startDate: new Date('2025-05-01') },
-        { name: '06-2025', days: 30, startDate: new Date('2025-06-01') },
-        { name: '07-2025', days: 31, startDate: new Date('2025-07-01') },
-        { name: '08-2025', days: 31, startDate: new Date('2025-08-01') },
-        { name: '09-2025', days: 30, startDate: new Date('2025-09-01') },
-        { name: '10-2025', days: 31, startDate: new Date('2025-10-01') },
-        { name: '11-2025', days: 30, startDate: new Date('2025-11-01') },
-        { name: '12-2025', days: 31, startDate: new Date('2025-12-01') }
-    ];
-    
-    // Create month headers with proportional widths
-    const totalDays = months.reduce((sum, month) => sum + month.days, 0);
+
     months.forEach(month => {
         const monthDiv = document.createElement('div');
         monthDiv.className = 'gantt-month';
@@ -126,15 +127,16 @@ function renderGanttChart() {
         const row = createGanttRow(project, months, totalDays);
         ganttBody.appendChild(row);
     });
+
+    const todayLine = document.createElement('div');
+    todayLine.className = 'gantt-today-line';
+    todayLine.id = 'gantt-today-line';
+    ganttBody.appendChild(todayLine);
     
-    // Create and position today line after a short delay to ensure layout is complete
+    // // Create and position today line after a delay to ensure layout is complete
     // setTimeout(() => {
-    //     const todayLine = document.createElement('div');
-    //     todayLine.className = 'gantt-today-line';
-    //     todayLine.id = 'gantt-today-line';
-    //     ganttBody.appendChild(todayLine);
-    //     positionTodayLine(todayLine, months, totalDays);
-    // }, 100);
+    //         positionTodayLine(todayLine, months, totalDays);
+    // }, 200);
 }
 
 function createGanttRow(project, months, totalDays) {
@@ -207,24 +209,45 @@ function createGanttBar(project, totalDays) {
 }
 
 function positionTodayLine(todayLine, months, totalDays) {
-    // Set today as June 9, 2025
-    const today = new Date('2025-06-09');
-    const yearStart = new Date('2025-01-01');
+    // Set today as June 10, 2025
+    const today = new Date('2025-06-10');
     
-    // Calculate days from year start to today
-    const daysFromStart = (today - yearStart) / (1000 * 60 * 60 * 24);
+    // Find the target month and calculate position within it
+    let cumulativeDays = 0;
+    let targetMonth = null;
+    let daysIntoMonth = 0;
     
-    // Calculate percentage position within the timeline
-    const positionPercent = (daysFromStart / totalDays) * 100;
-    
-    // Position relative to the gantt-body (timeline area only)
-    const ganttBody = document.querySelector('.gantt-body');
-    if (ganttBody) {
-        const bodyWidth = ganttBody.offsetWidth;
-        const timelineWidth = bodyWidth - 250; // Subtract project column width
-        const todayPosition = 250 + (positionPercent / 100) * timelineWidth;
+    for (const month of months) {
+        const monthEnd = new Date(month.startDate);
+        monthEnd.setMonth(monthEnd.getMonth() + 1);
         
-        todayLine.style.left = `${todayPosition}px`;
+        if (today >= month.startDate && today < monthEnd) {
+            targetMonth = month;
+            daysIntoMonth = Math.floor((today - month.startDate) / (1000 * 60 * 60 * 24));
+            break;
+        }
+        cumulativeDays += month.days;
+    }
+  
+    if (targetMonth) {
+        // Calculate position based on cumulative days + position within target month
+        const totalPosition = cumulativeDays + daysIntoMonth;
+        const positionPercent = (totalPosition / totalDays) * 100;
+        
+        // Position relative to the gantt-body (timeline area only)
+        const ganttBody = document.querySelector('.gantt-body');
+        if (ganttBody) {
+            const bodyWidth = ganttBody.offsetWidth;
+            // Calculate project column width based on flex ratio (3:12 total, so 3/12 = 1/4)
+            const projectColumnWidth = bodyWidth * (3 / 12);
+            const timelineWidth = bodyWidth * (9 / 12);
+            const todayPosition = projectColumnWidth + (positionPercent / 100) * timelineWidth;
+            console.log("bodyWidth", bodyWidth);
+            console.log("projectColumnWidth", projectColumnWidth);
+            console.log("timelineWidth", timelineWidth);
+            console.log("todayPosition", todayPosition);
+            todayLine.style.left = `${todayPosition}px`;
+        }
     }
 }
 
@@ -255,6 +278,14 @@ function showTab(tabName) {
     // Redraw chart if dashboard is selected
     if (tabName === 'dashboard') {
         setTimeout(() => drawStatusChart(), 100);
+    }
+
+    if (tabName === 'timeline') {
+        // Create and position today line after a delay to ensure layout is complete
+        setTimeout(() => {
+            const todayLine = document.querySelector('.gantt-today-line');          
+            positionTodayLine(todayLine, months, totalDays);
+        }, 200);
     }
 }
 
