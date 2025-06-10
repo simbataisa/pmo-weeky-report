@@ -97,18 +97,18 @@ function renderGanttChart() {
     
     // Generate months for 2025 with proper date calculations
     const months = [
-        { name: 'tháng 1 năm 2025', days: 31, startDate: new Date('2025-01-01') },
-        { name: 'tháng 2 năm 2025', days: 28, startDate: new Date('2025-02-01') },
-        { name: 'tháng 3 năm 2025', days: 31, startDate: new Date('2025-03-01') },
-        { name: 'tháng 4 năm 2025', days: 30, startDate: new Date('2025-04-01') },
-        { name: 'tháng 5 năm 2025', days: 31, startDate: new Date('2025-05-01') },
-        { name: 'tháng 6 năm 2025', days: 30, startDate: new Date('2025-06-01') },
-        { name: 'tháng 7 năm 2025', days: 31, startDate: new Date('2025-07-01') },
-        { name: 'tháng 8 năm 2025', days: 31, startDate: new Date('2025-08-01') },
-        { name: 'tháng 9 năm 2025', days: 30, startDate: new Date('2025-09-01') },
-        { name: 'tháng 10 năm 2025', days: 31, startDate: new Date('2025-10-01') },
-        { name: 'tháng 11 năm 2025', days: 30, startDate: new Date('2025-11-01') },
-        { name: 'tháng 12 năm 2025', days: 31, startDate: new Date('2025-12-01') }
+        { name: '01-2025', days: 31, startDate: new Date('2025-01-01') },
+        { name: '02-2025', days: 28, startDate: new Date('2025-02-01') },
+        { name: '03-2025', days: 31, startDate: new Date('2025-03-01') },
+        { name: '04-2025', days: 30, startDate: new Date('2025-04-01') },
+        { name: '05-2025', days: 31, startDate: new Date('2025-05-01') },
+        { name: '06-2025', days: 30, startDate: new Date('2025-06-01') },
+        { name: '07-2025', days: 31, startDate: new Date('2025-07-01') },
+        { name: '08-2025', days: 31, startDate: new Date('2025-08-01') },
+        { name: '09-2025', days: 30, startDate: new Date('2025-09-01') },
+        { name: '10-2025', days: 31, startDate: new Date('2025-10-01') },
+        { name: '11-2025', days: 30, startDate: new Date('2025-11-01') },
+        { name: '12-2025', days: 31, startDate: new Date('2025-12-01') }
     ];
     
     // Create month headers with proportional widths

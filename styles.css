@@ -308,6 +308,37 @@ header h1 i {
     font-weight: 600;
 }
 
+.timeline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.timeline-header h2 {
+    color: white;
+    font-size: 2rem;
+    font-weight: 600;
+}
+
+.settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.settings-header h2 {
+    color: white;
+    font-size: 2rem;
+    font-weight: 600;
+}
+
+
 .btn-add {
     background: linear-gradient(135deg, #667eea, #764ba2);
     color: white;
@@ -502,16 +533,17 @@ header h1 i {
 
 .gantt-month {
     flex: 1;
-    padding: 15px 10px;
+    padding: 15px 5px;
     text-align: center;
     border-right: 1px solid #e0e6ed;
-    font-size: 0.9em;
+    font-size: 0.85em;
     background: linear-gradient(135deg, #667eea, #764ba2);
     color: white;
     font-weight: 600;
     border: none;
     white-space: nowrap;
     min-width: 0;
+    overflow: hidden;
 }
 
 .gantt-body {
@@ -1110,6 +1142,11 @@ header h1 i {
     }
     
     .projects-header {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .timeline-header {
         flex-direction: column;
         text-align: center;
     }
