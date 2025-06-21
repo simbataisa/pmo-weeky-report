@@ -582,7 +582,7 @@ function saveSettings() {
 function loadCurrentWeekData() {
     const week = document.getElementById('report-week').value;
     const year = document.getElementById('report-year').value;
-    const weekKey = `week-${week}-${year}`;
+    const weekKey = `weekly-report-${year}-week-${week}`;
     
     // Try to load data from localStorage
     const savedData = localStorage.getItem(weekKey);
@@ -1021,7 +1021,7 @@ function createNewWeeklyReport() {
         }
         
         // Save the new week data to localStorage
-        const newWeekStorageKey = `week-${nextWeek}-${nextYear}`;
+        const newWeekStorageKey = `weekly-report-${nextYear}-week-${nextWeek}`;
         const newWeekStorageData = {
             week: nextWeek,
             year: nextYear,
