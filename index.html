@@ -177,28 +177,47 @@
                 <div class="form-group">
                     <label for="report-week">Tuần báo cáo:</label>
                     <select id="report-week">
-                        <option value="23">Tuần 23</option>
-                        <option value="24">Tuần 24</option>
-                        <option value="25">Tuần 25</option>
+                        <!-- Options will be populated dynamically -->
                     </select>
                 </div>
                 <div class="form-group">
                     <label for="report-year">Năm:</label>
                     <select id="report-year">
-                        <option value="2025">2025</option>
-                        <option value="2024">2024</option>
+                        <!-- Options will be populated dynamically -->
                     </select>
                 </div>
                 <button class="btn-save" onclick="saveSettings()">
                     <i class="fas fa-save"></i> Lưu Cài Đặt
                 </button>
                 
+                <div class="weekly-report-management">
+                    <h3>Quản Lý Báo Cáo Tuần</h3>
+                    <div class="weekly-buttons">
+                        <div class="new-week-section">
+                            <button class="btn-new-week" onclick="createNewWeeklyReport()">
+                                <i class="fas fa-plus"></i> Tạo Báo Cáo Tuần Mới
+                            </button>
+                            <div class="copy-data-option">
+                                <label>
+                                    <input type="checkbox" id="copy-data-checkbox"> Copy dữ liệu tuần hiện tại
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                
                 <div class="data-management">
                     <h3>Quản Lý Dữ Liệu</h3>
                     <div class="data-buttons">
-                        <button class="btn-export-data" onclick="exportData()">
-                            <i class="fas fa-download"></i> Export Dữ Liệu (JSON)
-                        </button>
+                        <div class="export-options">
+                            <button class="btn-export-current" onclick="exportCurrentWeek()">
+                                <i class="fas fa-download"></i> Export Tuần Hiện Tại
+                            </button>
+                            <button class="btn-export-all" onclick="exportAllWeeks()">
+                                <i class="fas fa-archive"></i> Export Tất Cả Tuần (Backup)
+                            </button>
+                        </div>
                         <button class="btn-import-data" onclick="document.getElementById('import-file').click()">
                             <i class="fas fa-upload"></i> Import Dữ Liệu (JSON)
                         </button>

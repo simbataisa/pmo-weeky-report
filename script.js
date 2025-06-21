@@ -1,5 +1,11 @@
+// Global variables
+let projects = [];
+let currentWeek = 1; // Will be set properly after getWeekNumber function is available
+let currentYear = new Date().getFullYear();
+let importedWeeksData = null; // Store imported JSON data
+
 // Sample project data
-let projects = [
+let sampleProjects = [
     {
         id: 1,
         name: "Nền tảng cho thuê xe",
@@ -121,7 +127,6 @@ function renderGanttChart() {
         monthDiv.style.flex = `0 0 ${(month.days / totalDays) * 100}%`;
         ganttHeader.appendChild(monthDiv);
     });
-    
     // Create project rows
     projects.forEach(project => {
         const row = createGanttRow(project, months, totalDays);
@@ -242,10 +247,6 @@ function positionTodayLine(todayLine, months, totalDays) {
             const projectColumnWidth = bodyWidth * (3 / 12);
             const timelineWidth = bodyWidth * (9 / 12);
             const todayPosition = projectColumnWidth + (positionPercent / 100) * timelineWidth;
-            console.log("bodyWidth", bodyWidth);
-            console.log("projectColumnWidth", projectColumnWidth);
-            console.log("timelineWidth", timelineWidth);
-            console.log("todayPosition", todayPosition);
             todayLine.style.left = `${todayPosition}px`;
         }
     }
@@ -313,6 +314,11 @@ function renderProjects() {
         const row = createProjectRow(project);
         tableBody.appendChild(row);
     });
+}
+
+// Alias for renderProjects to fix import data error
+function renderProjectsTable() {
+    renderProjects();
 }
 
 // Create project row element
@@ -563,16 +569,54 @@ function saveSettings() {
     
     document.getElementById('current-week').textContent = `Tuần ${week} - tháng 06/${year}`;
     
+    // Load the project data for the selected week/year
+    loadCurrentWeekData();
+    
+    // Update the copy dropdown to sync with the new current week
+    // updatePreviousWeekOptions(); // Removed - selectbox no longer exists
+    
     alert('Cài đặt đã được lưu!');
 }
 
-// Export data to JSON
-function exportData() {
+// Load project data for the currently selected week/year
+function loadCurrentWeekData() {
+    const week = document.getElementById('report-week').value;
+    const year = document.getElementById('report-year').value;
+    const weekKey = `week-${week}-${year}`;
+    
+    // Try to load data from localStorage
+    const savedData = localStorage.getItem(weekKey);
+    
+    if (savedData) {
+        try {
+            const weekData = JSON.parse(savedData);
+            projects = weekData.projects || [];
+        } catch (error) {
+            console.error('Error parsing saved week data:', error);
+            projects = [];
+        }
+    } else {
+        // No data found for this week, initialize empty projects
+        projects = [];
+    }
+    
+    // Update all displays
+    renderProjectsTable();
+    renderGanttChart();
+    updateStats();
+    drawStatusChart();
+}
+
+// Export current week data only
+function exportCurrentWeek() {
+    const currentWeek = document.getElementById('report-week').value;
+    const currentYear = document.getElementById('report-year').value;
+    
     const data = {
         projects: projects,
         settings: {
-            week: document.getElementById('report-week').value,
-            year: document.getElementById('report-year').value,
+            week: currentWeek,
+            year: currentYear,
             exportDate: new Date().toISOString()
         },
         version: '1.0'
@@ -584,13 +628,91 @@ function exportData() {
     
     const a = document.createElement('a');
     a.href = url;
-    a.download = `weekly-report-data-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `weekly-report-week-${currentWeek}-${currentYear}-${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
-    alert('Dữ liệu đã được xuất thành công!');
+    alert(`Đã xuất dữ liệu tuần ${currentWeek}/${currentYear} thành công!`);
+}
+
+// Export all weeks data for backup
+function exportAllWeeks() {
+    const currentWeek = document.getElementById('report-week').value;
+    const currentYear = document.getElementById('report-year').value;
+    
+    // Collect all weekly data from localStorage as an array
+    const allWeeksArray = [];
+    const processedWeeks = new Set();
+    
+    // Add current week data
+    const currentWeekKey = `${currentYear}-${currentWeek}`;
+    const currentWeekData = {
+        week: currentWeek,
+        year: currentYear,
+        projects: JSON.parse(JSON.stringify(projects)),
+        savedAt: new Date().toISOString()
+    };
+    allWeeksArray.push(currentWeekData);
+    processedWeeks.add(currentWeekKey);
+    
+    // Collect all saved weeks from localStorage
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('weekly-report-')) {
+            try {
+                const savedData = JSON.parse(localStorage.getItem(key));
+                const weekKey = `${savedData.year}-${savedData.week}`;
+                
+                // Don't add duplicate current week data
+                if (!processedWeeks.has(weekKey)) {
+                    allWeeksArray.push(savedData);
+                    processedWeeks.add(weekKey);
+                }
+            } catch (e) {
+                console.warn(`Failed to parse saved data for key: ${key}`);
+            }
+        }
+    }
+    
+    // Sort weeks by year and week number for better organization
+    allWeeksArray.sort((a, b) => {
+        if (a.year !== b.year) {
+            return parseInt(a.year) - parseInt(b.year);
+        }
+        return parseInt(a.week) - parseInt(b.week);
+    });
+    
+    const data = {
+        weeks: allWeeksArray,
+        currentWeek: {
+            week: currentWeek,
+            year: currentYear
+        },
+        exportDate: new Date().toISOString(),
+        version: '2.1'
+    };
+    
+    const jsonString = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    const weekCount = allWeeksArray.length;
+    a.download = `weekly-report-backup-all-weeks-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    alert(`Đã xuất backup thành công! (${weekCount} tuần)`);
+}
+
+// Legacy function for backward compatibility
+function exportData() {
+    exportAllWeeks();
 }
 
 // Import data from JSON
@@ -603,40 +725,18 @@ function importData(event) {
         try {
             const data = JSON.parse(e.target.result);
             
-            // Validate data structure
-            if (!data.projects || !Array.isArray(data.projects)) {
-                throw new Error('Định dạng file không hợp lệ: thiếu mảng projects');
+            // Store imported data globally
+            importedWeeksData = data;
+            
+            // Check if this is the new multi-week format (version 2.0+)
+            if ((data.version === '2.0' || data.version === '2.1') && data.weeks) {
+                importMultiWeekData(data);
+            } else if (data.projects && Array.isArray(data.projects)) {
+                // Handle legacy single-week format (version 1.0)
+                importSingleWeekData(data);
+            } else {
+                throw new Error('Định dạng file không hợp lệ: không nhận diện được cấu trúc dữ liệu');
             }
-            
-            // Validate each project has required fields
-            const requiredFields = ['id', 'name', 'manager', 'status'];
-            for (const project of data.projects) {
-                for (const field of requiredFields) {
-                    if (!project.hasOwnProperty(field)) {
-                        throw new Error(`Dự án thiếu trường bắt buộc: ${field}`);
-                    }
-                }
-            }
-            
-            // Import projects
-            projects = data.projects;
-            
-            // Import settings if available
-            if (data.settings) {
-                if (data.settings.week) {
-                    document.getElementById('report-week').value = data.settings.week;
-                }
-                if (data.settings.year) {
-                    document.getElementById('report-year').value = data.settings.year;
-                }
-            }
-            
-            // Refresh the display
-            renderProjectsTable();
-            renderGanttChart();
-            updateStats();
-            
-            alert(`Đã import thành công ${data.projects.length} dự án!`);
             
         } catch (error) {
             alert(`Lỗi khi import dữ liệu: ${error.message}`);
@@ -647,6 +747,181 @@ function importData(event) {
     
     // Reset file input
     event.target.value = '';
+}
+
+// Import multi-week data (version 2.0+)
+function importMultiWeekData(data) {
+    let importedWeeks = 0;
+    let clearedWeeks = 0;
+    
+    // Validate weeks data - support both array (v2.1+) and object (v2.0) formats
+    if (!data.weeks) {
+        throw new Error('Định dạng file không hợp lệ: thiếu dữ liệu weeks');
+    }
+    
+    // Clear all existing weekly data from localStorage
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('weekly-report-')) {
+            keysToRemove.push(key);
+        }
+    }
+    
+    keysToRemove.forEach(key => {
+        localStorage.removeItem(key);
+        clearedWeeks++;
+    });
+    
+    // Clear current projects array
+    projects = [];
+    
+    // Convert weeks data to array format if it's an object (backward compatibility)
+    let weeksArray;
+    if (Array.isArray(data.weeks)) {
+        // New array format (v2.1+)
+        weeksArray = data.weeks;
+    } else {
+        // Old object format (v2.0) - convert to array
+        weeksArray = Object.values(data.weeks);
+    }
+    
+    // Process each week
+    for (const weekData of weeksArray) {
+        try {
+            // Validate week data structure
+            if (!weekData.projects || !Array.isArray(weekData.projects)) {
+                console.warn(`Bỏ qua tuần ${weekKey}: thiếu dữ liệu projects`);
+                continue;
+            }
+            
+            // Validate each project has required fields
+            const requiredFields = ['id', 'name', 'manager', 'status'];
+            let validWeek = true;
+            for (const project of weekData.projects) {
+                for (const field of requiredFields) {
+                    if (!project.hasOwnProperty(field)) {
+                        console.warn(`Bỏ qua tuần ${weekKey}: dự án thiếu trường ${field}`);
+                        validWeek = false;
+                        break;
+                    }
+                }
+                if (!validWeek) break;
+            }
+            
+            if (!validWeek) continue;
+            
+            // Store week data in localStorage
+            const storageKey = `weekly-report-${weekData.year}-week-${weekData.week}`;
+            localStorage.setItem(storageKey, JSON.stringify(weekData));
+            importedWeeks++;
+            
+        } catch (error) {
+            console.warn(`Lỗi khi import tuần ${weekKey}: ${error.message}`);
+        }
+    }
+    
+    // Set current week if specified
+    if (data.currentWeek) {
+        document.getElementById('report-week').value = data.currentWeek.week;
+        document.getElementById('report-year').value = data.currentWeek.year;
+        
+        // Load current week data if available
+        
+        // Find matching week data by comparing week and year separately
+        for (const weekKey in data.weeks) {
+            const weekData = data.weeks[weekKey];
+            if (weekData.week === data.currentWeek.week && weekData.year === data.currentWeek.year) {
+                projects = JSON.parse(JSON.stringify(weekData.projects));
+                break;
+            }
+        }
+    }
+    
+    // Refresh the display and dropdowns
+    populateYearDropdown();
+    populateWeekDropdown();
+    renderProjectsTable();
+    renderGanttChart();
+    updateStats();
+    drawStatusChart();
+    updateCurrentWeek();
+    // updatePreviousWeekOptions(); // Removed - selectbox no longer exists
+    
+    const message = `Đã import thành công ${importedWeeks} tuần!`;
+    const clearMessage = clearedWeeks > 0 ? `\n(Đã xóa ${clearedWeeks} tuần cũ và thay thế hoàn toàn)` : '';
+    alert(message + clearMessage);
+}
+
+// Import single-week data (legacy version 1.0)
+function importSingleWeekData(data) {
+    // Validate data structure
+    if (!data.projects || !Array.isArray(data.projects)) {
+        throw new Error('Định dạng file không hợp lệ: thiếu mảng projects');
+    }
+    
+    // Validate each project has required fields
+    const requiredFields = ['id', 'name', 'manager', 'status'];
+    for (const project of data.projects) {
+        for (const field of requiredFields) {
+            if (!project.hasOwnProperty(field)) {
+                throw new Error(`Dự án thiếu trường bắt buộc: ${field}`);
+            }
+        }
+    }
+    
+    // Clear all existing weekly data from localStorage
+    let clearedWeeks = 0;
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('weekly-report-')) {
+            keysToRemove.push(key);
+        }
+    }
+    
+    keysToRemove.forEach(key => {
+        localStorage.removeItem(key);
+        clearedWeeks++;
+    });
+    
+    // Import projects (replace all existing data)
+    projects = data.projects;
+    
+    // Import settings if available
+    if (data.settings) {
+        if (data.settings.week) {
+            document.getElementById('report-week').value = data.settings.week;
+        }
+        if (data.settings.year) {
+            document.getElementById('report-year').value = data.settings.year;
+        }
+        
+        // Save this week's data to localStorage for consistency
+        const weekData = {
+            week: data.settings.week,
+            year: data.settings.year,
+            projects: JSON.parse(JSON.stringify(projects)),
+            savedAt: new Date().toISOString()
+        };
+        
+        const storageKey = `weekly-report-${data.settings.year}-week-${data.settings.week}`;
+        localStorage.setItem(storageKey, JSON.stringify(weekData));
+    }
+    
+    // Refresh the display and dropdowns
+    populateYearDropdown();
+    populateWeekDropdown();
+    renderProjectsTable();
+    renderGanttChart();
+    updateStats();
+    drawStatusChart();
+    updateCurrentWeek();
+    // updatePreviousWeekOptions(); // Removed - selectbox no longer exists
+    
+    const message = `Đã import thành công ${data.projects.length} dự án!`;
+    const clearMessage = clearedWeeks > 0 ? `\n(Đã xóa ${clearedWeeks} tuần cũ và thay thế hoàn toàn)` : '';
+    alert(message + clearMessage);
 }
 
 // Close modal when clicking outside
@@ -671,7 +946,328 @@ document.addEventListener('keydown', function(event) {
     }
 });
 
+// Weekly Report Management Functions
+function createNewWeeklyReport() {
+    const currentWeek = parseInt(document.getElementById('report-week').value);
+    const currentYear = parseInt(document.getElementById('report-year').value);
+    const copyDataCheckbox = document.getElementById('copy-data-checkbox');
+    const shouldCopyData = copyDataCheckbox && copyDataCheckbox.checked;
+    
+    // Calculate next week
+    let nextWeek = currentWeek + 1;
+    let nextYear = currentYear;
+    
+    // Handle year transition (assuming 52 weeks per year)
+    if (nextWeek > 52) {
+        nextWeek = 1;
+        nextYear = currentYear + 1;
+    }
+    
+    // Confirm with user
+    const copyMessage = shouldCopyData ? '\nDữ liệu tuần hiện tại sẽ được copy sang tuần mới.' : '\nDữ liệu tuần mới sẽ được reset.';
+    const confirmMessage = `Tạo báo cáo mới cho Tuần ${nextWeek} - ${nextYear}?\nDữ liệu hiện tại sẽ được lưu trữ.${copyMessage}`;
+    
+    if (confirm(confirmMessage)) {
+        // Save current data with timestamp
+        const currentData = {
+            week: currentWeek,
+            year: currentYear,
+            projects: JSON.parse(JSON.stringify(projects)), // Deep copy
+            savedAt: new Date().toISOString()
+        };
+        
+        // Store in localStorage for backup
+        const storageKey = `weekly-report-${currentYear}-week-${currentWeek}`;
+        localStorage.setItem(storageKey, JSON.stringify(currentData));
+        console.log(localStorage);        // Handle projects data based on checkbox
+        if (shouldCopyData) {
+            // Keep all current data for the new week
+            projects = JSON.parse(JSON.stringify(projects)); // Deep copy to avoid reference issues
+        } else {
+            // Reset projects for new week (keep structure but reset progress-related fields)
+            projects = projects.map(project => ({
+                ...project,
+                description: '',
+                nextWeekTasks: '',
+                risks: '',
+                solutions: '',
+                // Keep other fields like name, manager, status, etc.
+            }));
+        }
+        
+        // Update importedWeeksData to include the new week
+        if (!importedWeeksData) {
+            importedWeeksData = { weeks: [] };
+        }
+        
+        // Add new week data to importedWeeksData
+        const newWeekData = {
+            week: nextWeek,
+            year: nextYear,
+            projects: shouldCopyData ? JSON.parse(JSON.stringify(projects)) : []
+        };
+        
+        // Convert to array format if needed
+        if (!Array.isArray(importedWeeksData.weeks)) {
+            importedWeeksData.weeks = Object.values(importedWeeksData.weeks);
+        }
+        
+        // Add new week if it doesn't exist
+        const existingWeekIndex = importedWeeksData.weeks.findIndex(w => w.week === nextWeek && w.year === nextYear);
+        if (existingWeekIndex === -1) {
+            importedWeeksData.weeks.push(newWeekData);
+        } else {
+            importedWeeksData.weeks[existingWeekIndex] = newWeekData;
+        }
+        
+        // Save the new week data to localStorage
+        const newWeekStorageKey = `week-${nextWeek}-${nextYear}`;
+        const newWeekStorageData = {
+            week: nextWeek,
+            year: nextYear,
+            projects: projects,
+            savedAt: new Date().toISOString()
+        };
+        localStorage.setItem(newWeekStorageKey, JSON.stringify(newWeekStorageData));
+        
+        // Update week settings
+        document.getElementById('report-week').value = nextWeek;
+        document.getElementById('report-year').value = nextYear;
+        document.getElementById('current-week').textContent = `Tuần ${nextWeek} - tháng 06/${nextYear}`;
+        
+        // Repopulate dropdowns to include the new week
+        populateWeekDropdown();
+        populateYearDropdown();
+        
+        // Refresh displays
+        renderProjectsTable();
+        renderGanttChart();
+        updateStats();
+        
+        // Reset checkbox after creating new week
+        if (copyDataCheckbox) {
+            copyDataCheckbox.checked = false;
+        }
+        
+        const successMessage = shouldCopyData 
+            ? `Đã tạo báo cáo mới cho Tuần ${nextWeek} - ${nextYear}!\nDữ liệu tuần trước đã được lưu trữ và copy sang tuần mới.`
+            : `Đã tạo báo cáo mới cho Tuần ${nextWeek} - ${nextYear}!\nDữ liệu tuần trước đã được lưu trữ và tuần mới đã được reset.`;
+        alert(successMessage);
+    }
+}
+
+// Copy data from previous week (function removed - selectbox no longer available)
+// This function has been disabled as the week selection dropdown was removed
+function copyPreviousWeekData() {
+    alert('Chức năng copy dữ liệu tuần trước đã bị vô hiệu hóa.');
+}
+
+// updatePreviousWeekOptions function removed - selectbox no longer exists
+
+// Function to check if JSON data contains specific week data
+function checkForSpecificWeekData() {
+    // Check if there's a specific week in the settings or data
+    const reportWeekElement = document.getElementById('report-week');
+    const reportYearElement = document.getElementById('report-year');
+    
+    // Look for saved settings that indicate a specific week
+    const savedSettings = localStorage.getItem('weeklyReportSettings');
+    if (savedSettings) {
+        try {
+            const settings = JSON.parse(savedSettings);
+            if (settings.week && settings.year) {
+                return {
+                    hasData: true,
+                    week: parseInt(settings.week),
+                    year: parseInt(settings.year)
+                };
+            }
+        } catch (e) {
+            // Ignore parsing errors
+        }
+    }
+    
+    // Check if there's only one week of data in localStorage
+    const weekDataKeys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('weekly-report-')) {
+            weekDataKeys.push(key);
+        }
+    }
+    
+    if (weekDataKeys.length === 1) {
+        // Extract week and year from the single data key
+        const match = weekDataKeys[0].match(/weekly-report-(\d+)-week-(\d+)/);
+        if (match) {
+            return {
+                hasData: true,
+                week: parseInt(match[2]),
+                year: parseInt(match[1])
+            };
+        }
+    }
+    
+    return { hasData: false };
+}
+
+// Function to calculate week range from project data
+function getWeekRangeFromProjects() {
+    let minWeek = 52;
+    let maxWeek = 1;
+    
+    projects.forEach(project => {
+        if (project.startDate && project.endDate) {
+            const startWeek = getWeekNumber(new Date(project.startDate));
+            const endWeek = getWeekNumber(new Date(project.endDate));
+            
+            minWeek = Math.min(minWeek, startWeek);
+            maxWeek = Math.max(maxWeek, endWeek);
+        }
+    });
+    
+    return { minWeek, maxWeek };
+}
+
 // Auto-refresh data every 5 minutes
 setInterval(() => {
     updateCurrentWeek();
 }, 300000);
+
+// Function to populate year dropdown
+function populateYearDropdown() {
+    const yearSelect = document.getElementById('report-year');
+    const currentYear = new Date().getFullYear();
+    
+    // Clear existing options
+    yearSelect.innerHTML = '';
+    
+    // Collect years from imported data
+    const availableYears = new Set();
+    
+    // Check if we have imported data
+    if (importedWeeksData && importedWeeksData.weeks) {
+        // Convert weeks data to array format if it's an object (backward compatibility)
+        let weeksArray;
+        if (Array.isArray(importedWeeksData.weeks)) {
+            // New array format (v2.1+)
+            weeksArray = importedWeeksData.weeks;
+        } else {
+            // Old object format (v2.0) - convert to array
+            weeksArray = Object.values(importedWeeksData.weeks);
+        }
+        
+        // Extract years from imported weeks data
+        weeksArray.forEach(weekData => {
+            if (weekData.year) {
+                availableYears.add(parseInt(weekData.year));
+            }
+        });
+    }
+    
+    // If no imported data exists, add current year as fallback
+    if (availableYears.size === 0) {
+        availableYears.add(currentYear);
+    }
+    
+    // Sort years in descending order and create options
+    const sortedYears = Array.from(availableYears).sort((a, b) => b - a);
+    
+    sortedYears.forEach(year => {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = year;
+        yearSelect.appendChild(option);
+    });
+    
+    // Set the most recent year as default, or current year if available
+    if (availableYears.has(currentYear)) {
+        yearSelect.value = currentYear;
+    } else {
+        yearSelect.value = sortedYears[0];
+    }
+}
+
+// Function to populate week dropdown
+function populateWeekDropdown() {
+    const weekSelect = document.getElementById('report-week');
+    
+    // Clear existing options
+    weekSelect.innerHTML = '';
+    
+    // Check if we have imported data
+    if (importedWeeksData && importedWeeksData.weeks) {
+        // Convert weeks data to array format if it's an object (backward compatibility)
+        let weeksArray;
+        if (Array.isArray(importedWeeksData.weeks)) {
+            // New array format (v2.1+)
+            weeksArray = importedWeeksData.weeks;
+        } else {
+            // Old object format (v2.0) - convert to array
+            weeksArray = Object.values(importedWeeksData.weeks);
+        }
+        
+        // Extract available weeks from imported data
+        const availableWeeks = new Set();
+        weeksArray.forEach(weekData => {
+            if (weekData.week) {
+                availableWeeks.add(parseInt(weekData.week));
+            }
+        });
+        
+        // Sort weeks and create options
+        const sortedWeeks = Array.from(availableWeeks).sort((a, b) => a - b);
+        
+        sortedWeeks.forEach(week => {
+            const option = document.createElement('option');
+            option.value = week;
+            option.textContent = `Tuần ${week}`;
+            weekSelect.appendChild(option);
+        });
+        
+        // Set first available week as default
+        if (sortedWeeks.length > 0) {
+            weekSelect.value = sortedWeeks[0];
+        }
+    }
+    // If no imported data exists, leave dropdown empty
+}
+
+// Function to get week number from date
+function getWeekNumber(date) {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+
+// Initialize dropdowns and previous week options on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Populate dropdowns first
+    populateYearDropdown();
+    populateWeekDropdown();
+    
+    // Update current week display
+    const week = document.getElementById('report-week').value;
+    const year = document.getElementById('report-year').value;
+    document.getElementById('current-week').textContent = `Tuần ${week} - tháng 06/${year}`;
+    
+    // Load the current week's data
+    loadCurrentWeekData();
+    
+    // Then update previous week options
+    // updatePreviousWeekOptions(); // Removed - selectbox no longer exists
+    
+    // Add event listeners to sync dropdowns when report week/year changes
+    const reportWeekSelect = document.getElementById('report-week');
+    const reportYearSelect = document.getElementById('report-year');
+    
+    if (reportWeekSelect) {
+        reportWeekSelect.addEventListener('change', loadCurrentWeekData);
+    }
+    
+    if (reportYearSelect) {
+        reportYearSelect.addEventListener('change', loadCurrentWeekData);
+    }
+});
