@@ -524,6 +524,25 @@ function getWeekNumber(date) {
     return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
 }
 
+// Function to get month from week number
+function getMonthFromWeek(weekNumber, year) {
+    // Create a date for January 1st of the given year
+    const jan1 = new Date(year, 0, 1);
+    
+    // Calculate the first Monday of the year (ISO week 1 starts on Monday)
+    const firstMonday = new Date(jan1);
+    const dayOfWeek = jan1.getDay();
+    const daysToAdd = dayOfWeek === 0 ? 1 : 8 - dayOfWeek; // If Sunday, add 1 day; otherwise add days to reach Monday
+    firstMonday.setDate(jan1.getDate() + daysToAdd);
+    
+    // Calculate the date for the given week number
+    const targetDate = new Date(firstMonday);
+    targetDate.setDate(firstMonday.getDate() + (weekNumber - 1) * 7);
+    
+    // Return the month (1-12)
+    return targetDate.getMonth() + 1;
+}
+
 // Export report function
 function exportReport() {
     // Show loading message
@@ -1219,8 +1238,9 @@ function createRiskDetailRows() {
 function saveSettings() {
     const week = document.getElementById('report-week').value;
     const year = document.getElementById('report-year').value;
+    const monthFromWeek = getMonthFromWeek(week, year);
     
-    document.getElementById('current-week').textContent = `Tuần ${week} - tháng 06/${year}`;
+    document.getElementById('current-week').textContent = `Tuần ${week} - tháng ${monthFromWeek.toString().padStart(2, '0')}/${year}`;
     
     // Load the project data for the selected week/year
     loadCurrentWeekData();
@@ -1531,7 +1551,8 @@ function importMultiWeekData(data) {
     // Update current-week span to reflect selected week
     const selectedWeek = document.getElementById('report-week').value;
     const selectedYear = document.getElementById('report-year').value;
-    document.getElementById('current-week').textContent = `Tuần ${selectedWeek} - tháng 06/${selectedYear}`;
+    const monthFromWeek = getMonthFromWeek(selectedWeek, selectedYear);
+    document.getElementById('current-week').textContent = `Tuần ${selectedWeek} - tháng ${monthFromWeek.toString().padStart(2, '0')}/${selectedYear}`;
     // updatePreviousWeekOptions(); // Removed - selectbox no longer exists
     
     const message = `Đã import thành công ${importedWeeks} tuần!`;
@@ -1740,7 +1761,8 @@ function createNewWeeklyReport() {
         // Update week settings after dropdowns are populated
         document.getElementById('report-week').value = nextWeek;
         document.getElementById('report-year').value = nextYear;
-        document.getElementById('current-week').textContent = `Tuần ${nextWeek} - tháng 06/${nextYear}`;
+        const monthFromWeek = getMonthFromWeek(nextWeek, nextYear);
+        document.getElementById('current-week').textContent = `Tuần ${nextWeek} - tháng ${monthFromWeek.toString().padStart(2, '0')}/${nextYear}`;
         
         // Load current week data after updating selections
         loadCurrentWeekData();
@@ -2090,7 +2112,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update current week display
     const week = document.getElementById('report-week').value;
     const year = document.getElementById('report-year').value;
-    document.getElementById('current-week').textContent = `Tuần ${week} - tháng 06/${year}`;
+    const monthFromWeek = getMonthFromWeek(week, year);
+    document.getElementById('current-week').textContent = `Tuần ${week} - tháng ${monthFromWeek.toString().padStart(2, '0')}/${year}`;
     
     // Load the current week's data
     loadCurrentWeekData();
