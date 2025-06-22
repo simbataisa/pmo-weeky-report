@@ -1042,14 +1042,14 @@ function createNewWeeklyReport() {
         };
         localStorage.setItem(newWeekStorageKey, JSON.stringify(newWeekStorageData));
         
-        // Update week settings
+        // Repopulate dropdowns to include the new week first
+        populateWeekDropdown();
+        populateYearDropdown();
+        
+        // Update week settings after dropdowns are populated
         document.getElementById('report-week').value = nextWeek;
         document.getElementById('report-year').value = nextYear;
         document.getElementById('current-week').textContent = `Tuần ${nextWeek} - tháng 06/${nextYear}`;
-        
-        // Repopulate dropdowns to include the new week
-        populateWeekDropdown();
-        populateYearDropdown();
         
         // Load current week data after updating selections
         loadCurrentWeekData();
