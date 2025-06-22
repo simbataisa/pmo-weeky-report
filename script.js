@@ -522,44 +522,300 @@ function getWeekNumber(date) {
 
 // Export report function
 function exportReport() {
-    // Create a simple text report
-    let report = `BÁO CÁO TUẦN - TIẾN ĐỘ DỰ ÁN\n`;
-    report += `${document.getElementById('current-week').textContent}\n\n`;
+    // Show loading message
+    showPopup('Đang tạo báo cáo PDF...', 'info');
+
+    // Create a container for the PDF content
+    const pdfContainer = document.createElement('div');
+    // pdfContainer.style.padding = '20px';
+    pdfContainer.style.background = 'white';
+    pdfContainer.style.width = '100%'; // Set a fixed width for consistent scaling
+    pdfContainer.style.opacity = '1'; // Ensure content is fully visible
+
+    // Generate content from helper functions
+    const dashboardHTML = createDashboardPDFContent();
+    const projectsHTML = createProjectsPDFContent();
+    const timelineHTML = createTimelinePDFContent();
+
+    // Combine all content
+    pdfContainer.innerHTML = '' + dashboardHTML + projectsHTML + timelineHTML;
+    // pdfContainer.innerHTML = dashboardHTML + timelineHTML;
+
+    // Append to body to be discoverable by html2pdf
+    document.body.appendChild(pdfContainer);
+
+    // PDF options
+    const options = {
+        margin: [0.5, 0.5, 0.5, 0.5],
+        filename: `bao-cao-tuan-${getWeekNumber(new Date())}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+            scale: 2,
+            useCORS: true,
+            letterRendering: true
+        },
+        jsPDF: {
+            unit: 'in',
+            format: 'a4',
+            orientation: 'portrait'
+        },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+
+    // Generate PDF
+    html2pdf().set(options).from(pdfContainer).save().then(() => {
+        showPopup('Báo cáo PDF đã được xuất thành công!', 'success');
+    }).catch((error) => {
+        console.error('Error generating PDF:', error);
+        showPopup('Có lỗi xảy ra khi tạo PDF. Vui lòng thử lại.', 'error');
+    }).finally(() => {
+        // Clean up the container from the body
+        document.body.removeChild(pdfContainer);
+    });
+}
+
+// Helper function to create Dashboard PDF content
+function createDashboardPDFContent() {
+    // Use global projects variable
     
-    report += `TỔNG QUAN:\n`;
-    report += `- Tổng số dự án: ${projects.length}\n`;
-    report += `- Tốt (Healthy): ${projects.filter(p => p.status === 'healthy').length}\n`;
-    report += `- Cần chú ý: ${projects.filter(p => p.status === 'warning').length}\n`;
-    report += `- Cần hành động: ${projects.filter(p => p.status === 'critical').length}\n\n`;
+    // Create dashboard section
+    let content = `
+        <div style="margin-bottom: 30px;">
+            <h2 style="color: #007bff; border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 20px;">Dashboard Tổng Quan</h2>
+            
+            <div style="margin-bottom: 20px;">
+                <h3 style="color: #555; margin-bottom: 15px;">Tổng Quan Dự Án</h3>
+                <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
+                    <div style="flex: 1; min-width: 150px; background: #f8f9fa; border-radius: 5px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <div style="font-weight: bold; color: #007bff; margin-bottom: 5px;">Tổng số dự án</div>
+                        <div style="font-size: 24px; font-weight: bold;">${projects.length}</div>
+                    </div>
+                    <div style="flex: 1; min-width: 150px; background: #f8f9fa; border-radius: 5px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <div style="font-weight: bold; color: #28a745; margin-bottom: 5px;">Tốt (Healthy)</div>
+                        <div style="font-size: 24px; font-weight: bold;">${projects.filter(p => p.status === 'healthy').length}</div>
+                    </div>
+                    <div style="flex: 1; min-width: 150px; background: #f8f9fa; border-radius: 5px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <div style="font-weight: bold; color: #ffc107; margin-bottom: 5px;">Cần chú ý</div>
+                        <div style="font-size: 24px; font-weight: bold;">${projects.filter(p => p.status === 'warning').length}</div>
+                    </div>
+                    <div style="flex: 1; min-width: 150px; background: #f8f9fa; border-radius: 5px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <div style="font-weight: bold; color: #dc3545; margin-bottom: 5px;">Cần hành động</div>
+                        <div style="font-size: 24px; font-weight: bold;">${projects.filter(p => p.status === 'critical').length}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 style="color: #555; margin-bottom: 15px;">Các Vấn Đề Nổi Bật & Cần Ra Quyết Định</h3>
+                <div style="background: #f8f9fa; border-radius: 5px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    ${createIssuesList()}
+                </div>
+            </div>
+        </div>
+    `;
     
-    report += `CHI TIẾT CÁC DỰ ÁN:\n\n`;
+    return content;
+}
+
+// Helper function to create issues list for dashboard
+function createIssuesList() {
+    let issuesHtml = '';
     
-    projects.forEach((project, index) => {
-        const statusText = {
-            'healthy': 'Tốt',
-            'warning': 'Cần chú ý',
-            'critical': 'Cần hành động'
-        };
+    // Extract key issues from project data
+    projects.forEach(project => {
+        // Add risks as issues if they exist and are not "Không có"
+        if (project.risks && project.risks.trim() !== '' && project.risks.toLowerCase() !== 'không có') {
+            const statusColor = project.status === 'healthy' ? '#28a745' : 
+                               project.status === 'warning' ? '#ffc107' : '#dc3545';
+            
+            issuesHtml += `
+                <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #ddd;">
+                    <h4 style="margin: 0 0 10px 0; color: ${statusColor};">🚨 Rủi ro: ${project.name}</h4>
+                    <p style="margin: 0; color: #666;">${project.risks}</p>
+                </div>
+            `;
+        }
         
-        report += `${index + 1}. ${project.name}\n`;
-        report += `   Trạng thái: ${statusText[project.status]}\n`;
-        report += `   Miêu tả: ${project.description}\n`;
-        report += `   Rủi ro: ${project.risks}\n`;
-        report += `   Cách giải quyết: ${project.solutions}\n\n`;
+        // Add critical/warning projects as issues needing attention
+        if (project.status === 'critical' || project.status === 'warning') {
+            const statusColor = project.status === 'warning' ? '#ffc107' : '#dc3545';
+            const statusText = project.status === 'warning' ? 'Cần chú ý' : 'Cần hành động ngay';
+            
+            issuesHtml += `
+                <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #ddd;">
+                    <h4 style="margin: 0 0 10px 0; color: ${statusColor};">⚠️ ${statusText}: ${project.name}</h4>
+                    <p style="margin: 0; color: #666;"><strong>Mô tả:</strong> ${project.description}</p>
+                    ${project.solutions ? `<p style="margin: 5px 0 0 0; color: #666;"><strong>Giải pháp:</strong> ${project.solutions}</p>` : ''}
+                </div>
+            `;
+        }
     });
     
-    // Create and download file
-    const blob = new Blob([report], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `bao-cao-tuan-${getWeekNumber(new Date())}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    if (issuesHtml === '') {
+        return '<p style="color: #28a745; font-weight: bold;">✅ Tất cả dự án đang tiến triển tốt, không có vấn đề nổi bật.</p>';
+    }
     
-    showPopup('Báo cáo đã được xuất thành công!', 'success');
+    return issuesHtml;
+}
+
+// Helper function to create Projects PDF content
+function createProjectsPDFContent() {
+    // Use global projects variable
+    
+    // Create projects section
+    let content = `
+        <div style="margin-bottom: 30px;">
+            <h2 style="color: #007bff; border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 20px;">Chi Tiết Dự Án</h2>
+            
+            <div style="overflow-x: auto;">
+                <table style="width: 98%; border-collapse: collapse; margin-bottom: 20px;">
+                    <thead>
+                        <tr style="background-color: #f8f9fa;">
+                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Tên Dự Án</th>
+                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Quản Lý</th>
+                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Tình Trạng</th>
+                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Cấp Nhật & Chi Chú</th>
+                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd;">Vấn Đề/Rủi Ro</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${createProjectsTableRows(projects)}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    return content;
+}
+
+// Helper function to create project table rows
+function createProjectsTableRows(projects) {
+    if (projects.length === 0) {
+        return `<tr><td colspan="5" style="padding: 12px; text-align: center; border-bottom: 1px solid #ddd;">Không có dự án nào.</td></tr>`;
+    }
+    
+    const statusColors = {
+        'healthy': '#28a745',
+        'warning': '#ffc107',
+        'critical': '#dc3545'
+    };
+    
+    const statusText = {
+        'healthy': 'Tốt',
+        'warning': 'Cần chú ý',
+        'critical': 'Cần hành động'
+    };
+    
+    let rowsHtml = '';
+    projects.forEach(project => {
+        rowsHtml += `
+            <tr>
+                <td style="padding: 12px; text-align: left; border-bottom: 1px solid #ddd;">${project.name}</td>
+                <td style="padding: 12px; text-align: left; border-bottom: 1px solid #ddd;">${project.manager || 'N/A'}</td>
+                <td style="padding: 12px; text-align: left; border-bottom: 1px solid #ddd;">
+                    <span style="color: ${statusColors[project.status]}; font-weight: bold;">${statusText[project.status]}</span>
+                </td>
+                <td style="padding: 12px; text-align: left; border-bottom: 1px solid #ddd;">${project.description || 'N/A'}</td>
+                <td style="padding: 12px; text-align: left; border-bottom: 1px solid #ddd;">${project.risks || 'Không có'}</td>
+            </tr>
+        `;
+    });
+    
+    return rowsHtml;
+}
+
+// Helper function to create Timeline PDF content
+function createTimelinePDFContent() {
+    // Get current date for reference
+    const currentDate = new Date().toLocaleDateString('vi-VN');
+    
+    // Create timeline section
+    let content = `
+        <div style="margin-bottom: 30px;">
+            <h2 style="color: #007bff; border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 20px;">Timeline Dự Án</h2>
+            
+            <div style="margin-bottom: 15px;">
+                <p style="color: #666; margin: 0;"><strong>Ngày hiện tại:</strong> ${currentDate}</p>
+            </div>
+            
+            <div style="overflow-x: auto;">
+                <table style="width: 98%; border-collapse: collapse; margin-bottom: 20px;">
+                    <thead>
+                        <tr style="background-color: #f8f9fa;">
+                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd; border: 1px solid #ddd;">Tên Dự Án</th>
+                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd; border: 1px solid #ddd;">Ngày Bắt Đầu</th>
+                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd; border: 1px solid #ddd;">Ngày Kết Thúc</th>
+                            <th style="padding: 12px; text-align: center; border-bottom: 2px solid #ddd; border: 1px solid #ddd;">Tiến Độ (%)</th>
+                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd; border: 1px solid #ddd;">Trạng Thái</th>
+                            <th style="padding: 12px; text-align: left; border-bottom: 2px solid #ddd; border: 1px solid #ddd;">Quản Lý</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${createTimelineTableRows()}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    return content;
+}
+
+// Helper function to create timeline table rows
+function createTimelineTableRows() {
+    // Use global projects variable
+    if (projects.length === 0) {
+        return '<tr><td colspan="6" style="padding: 20px; text-align: center; color: #666;">Không có dự án nào trong timeline.</td></tr>';
+    }
+    
+    let rowsHtml = '';
+    projects.forEach(project => {
+        // Format dates
+        const startDate = project.startDate ? new Date(project.startDate).toLocaleDateString('vi-VN') : 'Chưa xác định';
+        const endDate = project.endDate ? new Date(project.endDate).toLocaleDateString('vi-VN') : 'Chưa xác định';
+        
+        // Get status color and text
+        const statusColor = project.status === 'healthy' ? '#28a745' : 
+                           project.status === 'warning' ? '#ffc107' : '#dc3545';
+        const statusText = project.status === 'healthy' ? 'Tốt' : 
+                          project.status === 'warning' ? 'Cần chú ý' : 'Cần hành động';
+        
+        // Progress bar styling
+        const progress = project.progress || 0;
+        const progressColor = progress >= 80 ? '#28a745' : 
+                             progress >= 50 ? '#ffc107' : '#dc3545';
+        
+        rowsHtml += `
+            <tr>
+                <td style="padding: 12px; border: 1px solid #ddd; vertical-align: top;">
+                    <strong>${project.name}</strong>
+                </td>
+                <td style="padding: 12px; border: 1px solid #ddd; vertical-align: top;">
+                    ${startDate}
+                </td>
+                <td style="padding: 12px; border: 1px solid #ddd; vertical-align: top;">
+                    ${endDate}
+                </td>
+                <td style="padding: 12px; border: 1px solid #ddd; text-align: center; vertical-align: top;">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        <div style="width: 60px; height: 8px; background: #e9ecef; border-radius: 4px; overflow: hidden;">
+                            <div style="width: ${progress}%; height: 100%; background: ${progressColor}; transition: width 0.3s;"></div>
+                        </div>
+                        <span style="font-weight: bold; color: ${progressColor};">${progress}%</span>
+                    </div>
+                </td>
+                <td style="padding: 12px; border: 1px solid #ddd; vertical-align: top;">
+                    <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span>
+                </td>
+                <td style="padding: 12px; border: 1px solid #ddd; vertical-align: top;">
+                    ${project.manager || 'Chưa phân công'}
+                </td>
+            </tr>
+        `;
+    });
+    
+    return rowsHtml;
 }
 
 // Save settings function
