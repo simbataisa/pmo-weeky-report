@@ -571,7 +571,218 @@ function exportReport() {
     }).finally(() => {
         // Clean up the container from the body
         document.body.removeChild(pdfContainer);
+    });}
+
+// Export Excel report function
+function exportExcel() {
+    // Show loading message
+    showPopup('Đang tạo báo cáo Excel...', 'info');
+
+    try {
+        // Create workbook
+        const wb = XLSX.utils.book_new();
+        
+        // Create Dashboard worksheet
+        const dashboardData = createDashboardExcelData();
+        const dashboardWS = XLSX.utils.aoa_to_sheet(dashboardData);
+        XLSX.utils.book_append_sheet(wb, dashboardWS, 'Dashboard');
+        
+        // Create Projects worksheet
+        const projectsData = createProjectsExcelData();
+        const projectsWS = XLSX.utils.aoa_to_sheet(projectsData);
+        XLSX.utils.book_append_sheet(wb, projectsWS, 'Chi Tiết Dự Án');
+        
+        // Create Timeline worksheet
+        const timelineData = createTimelineExcelData();
+        const timelineWS = XLSX.utils.aoa_to_sheet(timelineData);
+        XLSX.utils.book_append_sheet(wb, timelineWS, 'Timeline');
+        
+        // Create Risk Map worksheet
+        const riskData = createRiskMapExcelData();
+        const riskWS = XLSX.utils.aoa_to_sheet(riskData);
+        XLSX.utils.book_append_sheet(wb, riskWS, 'Risk Map');
+        
+        // Generate filename
+        const filename = `bao-cao-tuan-${getWeekNumber(new Date())}.xlsx`;
+        
+        // Save file
+        XLSX.writeFile(wb, filename);
+        
+        showPopup('Báo cáo Excel đã được xuất thành công!', 'success');
+    } catch (error) {
+        console.error('Error generating Excel:', error);
+        showPopup('Có lỗi xảy ra khi tạo Excel. Vui lòng thử lại.', 'error');
+    }
+}
+
+// Helper function to create Dashboard Excel data
+function createDashboardExcelData() {
+    const data = [];
+    
+    // Header
+    data.push(['BÁO CÁO TUẦN - DASHBOARD TỔNG QUAN']);
+    data.push([]);
+    
+    // Project statistics
+    const totalProjects = projects.length;
+    const healthyProjects = projects.filter(p => p.status === 'healthy').length;
+    const warningProjects = projects.filter(p => p.status === 'warning').length;
+    const criticalProjects = projects.filter(p => p.status === 'critical').length;
+    
+    data.push(['TỔNG QUAN DỰ ÁN']);
+    data.push(['Tổng số dự án:', totalProjects]);
+    data.push(['Dự án tốt (Healthy):', healthyProjects]);
+    data.push(['Dự án cần chú ý (Warning):', warningProjects]);
+    data.push(['Dự án cần hành động (Critical):', criticalProjects]);
+    data.push([]);
+    
+    // Key issues
+    data.push(['CÁC VẤN ĐỀ CHÍNH']);
+    projects.forEach(project => {
+        if (project.risks && project.risks.trim() !== '' && project.risks.toLowerCase() !== 'không có') {
+            data.push([`Rủi ro - ${project.name}:`, project.risks]);
+        }
+        if (project.status === 'critical' || project.status === 'warning') {
+            data.push([`Dự án cần chú ý - ${project.name}:`, `Trạng thái: ${project.status}`]);
+        }
     });
+    
+    return data;
+}
+
+// Helper function to create Projects Excel data
+function createProjectsExcelData() {
+    const data = [];
+    
+    // Header
+    data.push(['CHI TIẾT CÁC DỰ ÁN']);
+    data.push([]);
+    
+    // Table headers
+    data.push([
+        'Tên Dự Án',
+        'Quản Lý',
+        'Trạng Thái',
+        'Ưu Tiên',
+        'Tiến Độ (%)',
+        'Mô Tả',
+        'Nhiệm Vụ Tuần Tới',
+        'Rủi Ro',
+        'Giải Pháp',
+        'Ngày Bắt Đầu',
+        'Ngày Kết Thúc'
+    ]);
+    
+    // Project data
+    projects.forEach(project => {
+        data.push([
+            project.name,
+            project.manager,
+            project.status,
+            project.priority,
+            project.progress,
+            project.description,
+            project.nextWeekTasks,
+            project.risks,
+            project.solutions,
+            project.startDate,
+            project.endDate
+        ]);
+    });
+    
+    return data;
+}
+
+// Helper function to create Timeline Excel data
+function createTimelineExcelData() {
+    const data = [];
+    
+    // Header
+    data.push(['TIMELINE DỰ ÁN']);
+    data.push([]);
+    
+    // Table headers
+    data.push([
+        'Tên Dự Án',
+        'Quản Lý',
+        'Ngày Bắt Đầu',
+        'Ngày Kết Thúc',
+        'Tiến Độ (%)',
+        'Trạng Thái',
+        'Thời Gian Còn Lại (ngày)'
+    ]);
+    
+    // Timeline data
+    projects.forEach(project => {
+        const startDate = new Date(project.startDate);
+        const endDate = new Date(project.endDate);
+        const today = new Date();
+        const daysRemaining = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+        
+        data.push([
+            project.name,
+            project.manager,
+            project.startDate,
+            project.endDate,
+            project.progress,
+            project.status,
+            daysRemaining
+        ]);
+    });
+    
+    return data;
+}
+
+// Helper function to create Risk Map Excel data
+function createRiskMapExcelData() {
+    const data = [];
+    
+    // Header
+    data.push(['RISK MAP - MA TRẬN RỦI RO']);
+    data.push([]);
+    
+    // Risk Matrix
+    data.push(['MA TRẬN RỦI RO THEO TRẠNG THÁI & ƯU TIÊN']);
+    data.push(['Ưu Tiên \\ Trạng Thái', 'Tốt (Healthy)', 'Cần Chú Ý (Warning)', 'Cần Hành Động (Critical)']);
+    
+    const priorities = ['high', 'medium', 'low'];
+    const statuses = ['healthy', 'warning', 'critical'];
+    
+    priorities.forEach(priority => {
+        const row = [priority.toUpperCase()];
+        statuses.forEach(status => {
+            const count = projects.filter(p => p.priority === priority && p.status === status).length;
+            row.push(count);
+        });
+        data.push(row);
+    });
+    
+    data.push([]);
+    data.push([]);
+    
+    // Risk Details
+    data.push(['CHI TIẾT RỦI RO THEO DỰ ÁN']);
+    data.push([
+        'Tên Dự Án',
+        'Quản Lý',
+        'Trạng Thái',
+        'Ưu Tiên',
+        'Rủi Ro Chính',
+        'Giải Pháp'
+    ]);
+    
+    projects.forEach(project => {
+        data.push([
+            project.name,
+            project.manager,
+            project.status,
+            project.priority,
+            project.risks || 'Không có',
+            project.solutions || 'Không có'
+        ]);
+    });
+    
+    return data;
 }
 
 // Helper function to create Dashboard PDF content

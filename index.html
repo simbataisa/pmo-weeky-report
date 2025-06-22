@@ -8,6 +8,8 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- html2pdf.js library for PDF generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js" integrity="sha512-MpDFIChbcXl2QgipQrt1VcPHMldRILetapBl5MPCA9Y8r7qvlwx1/Mc9hNTzY+kS5kX6PdoDq41ws1HiVNLdZA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- SheetJS library for Excel export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -17,6 +19,9 @@
                 <span id="current-week">Tuần 23 - tháng 06/2025</span>
                 <button class="btn-export" onclick="exportReport()">
                     <i class="fas fa-download"></i> Export Báo Cáo (PDF)
+                </button>
+                <button class="btn-export" onclick="exportExcel()" style="margin-left: 10px;">
+                    <i class="fas fa-file-excel"></i> Export Báo Cáo (Excel)
                 </button>
             </div>
         </header>
