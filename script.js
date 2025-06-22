@@ -548,10 +548,11 @@ function exportReport() {
     // Append to body to be discoverable by html2pdf
     document.body.appendChild(pdfContainer);
 
+    const selectedWeek = document.getElementById('report-week').value;
     // PDF options
     const options = {
         margin: [0.5, 0.5, 0.5, 0.5],
-        filename: `bao-cao-tuan-${getWeekNumber(new Date())}.pdf`,
+        filename: `bao-cao-tuan-${selectedWeek}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: {
             scale: 2,
