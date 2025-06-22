@@ -87,6 +87,7 @@ document.addEventListener('DOMContentLoaded', function() {
     drawStatusChart();
     updateCurrentWeek();
     renderGanttChart();
+    renderRiskMap();
 
     // Add form submit handler
     document.getElementById('project-form').addEventListener('submit', handleProjectSubmit);
@@ -314,6 +315,9 @@ function renderProjects() {
         const row = createProjectRow(project);
         tableBody.appendChild(row);
     });
+    
+    // Update Risk Map when projects change
+    renderRiskMap();
 }
 
 // Alias for renderProjects to fix import data error
@@ -1182,7 +1186,7 @@ function createRiskDetailRows() {
                             priority === 'medium' ? 'Trung Bình' : 'Thấp';
         
         // Clean up risks and solutions text
-        const risks = project.risks && project.risks !== 'Không có' ? project.risks : 'Không có rủi ro đặc biệt';
+        const risks = project.risks && project.risks !== 'Không có' ? project.risks : 'Không có';
         const solutions = project.solutions || 'Chưa có giải pháp cụ thể';
         
         rowsHtml += `
@@ -1228,11 +1232,26 @@ function saveSettings() {
 
 // Load project data for the currently selected week/year
 function loadCurrentWeekData() {
-    const week = document.getElementById('report-week').value;
-    const year = document.getElementById('report-year').value;
+    const weekElement = document.getElementById('report-week');
+    const yearElement = document.getElementById('report-year');
+    
+    // Check if dropdowns have valid values
+    if (!weekElement.value || !yearElement.value) {
+        // If no valid week/year selected, keep the default projects data
+        // Update all displays
+        renderProjectsTable();
+        renderGanttChart();
+        updateStats();
+        drawStatusChart();
+        renderRiskMap();
+        return;
+    }
+    
+    const week = weekElement.value;
+    const year = yearElement.value;
     const weekKey = `weekly-report-${year}-week-${week}`;
     
-    // Try to load data from localStorage
+    // Try to load data from localStorage first
     const savedData = localStorage.getItem(weekKey);
     
     if (savedData) {
@@ -1243,16 +1262,39 @@ function loadCurrentWeekData() {
             console.error('Error parsing saved week data:', error);
             projects = [];
         }
+    } else if (importedWeeksData && importedWeeksData.weeks) {
+        // Try to find data in imported weeks data
+        let weeksArray;
+        if (Array.isArray(importedWeeksData.weeks)) {
+            weeksArray = importedWeeksData.weeks;
+        } else {
+            weeksArray = Object.values(importedWeeksData.weeks);
+        }
+        
+        const weekData = weeksArray.find(w => 
+            w.week.toString() === week.toString() && 
+            w.year.toString() === year.toString()
+        );
+        
+        if (weekData && weekData.projects) {
+            projects = weekData.projects;
+        } else {
+            projects = [];
+        }
     } else {
         // No data found for this week, initialize empty projects
         projects = [];
     }
+    
+    console.log(`Loaded ${projects.length} projects for week ${week}/${year}`);
+    console.log('Projects data:', projects);
     
     // Update all displays
     renderProjectsTable();
     renderGanttChart();
     updateStats();
     drawStatusChart();
+    renderRiskMap();
 }
 
 // Export current week data only
@@ -1887,8 +1929,20 @@ function populateWeekDropdown() {
         if (sortedWeeks.length > 0) {
             weekSelect.value = sortedWeeks[0];
         }
+    } else {
+        // If no imported data exists, create default weeks (1-52)
+        const currentWeek = getWeekNumber(new Date());
+        
+        for (let week = 1; week <= 52; week++) {
+            const option = document.createElement('option');
+            option.value = week;
+            option.textContent = `Tuần ${week}`;
+            weekSelect.appendChild(option);
+        }
+        
+        // Set current week as default
+        weekSelect.value = currentWeek;
     }
-    // If no imported data exists, leave dropdown empty
 }
 
 // Function to get week number from date
@@ -2055,3 +2109,81 @@ document.addEventListener('DOMContentLoaded', function() {
         reportYearSelect.addEventListener('change', loadCurrentWeekData);
     }
 });
+
+// Risk Map rendering functions
+function renderRiskMap() {
+    renderRiskMatrix();
+    renderRiskDetails();
+}
+
+function renderRiskMatrix() {
+    const riskMatrixBody = document.getElementById('risk-matrix-body');
+    if (!riskMatrixBody) return;
+    
+    const priorities = ['high', 'medium', 'low'];
+    const statuses = ['healthy', 'warning', 'critical']; // Order matches HTML header columns
+    const priorityLabels = {
+        'high': 'Cao',
+        'medium': 'Trung Bình', 
+        'low': 'Thấp'
+    };
+    
+    let html = '';
+    
+    priorities.forEach(priority => {
+        html += `<tr>`;
+        html += `<td class="priority-${priority}">${priorityLabels[priority]}</td>`;
+        
+        statuses.forEach(status => {
+            const count = projects.filter(p => p.priority === priority && p.status === status).length;
+            const cellClass = count === 0 ? 'risk-count zero' : 'risk-count';
+            const statusClass = `status-${status}`;
+            html += `<td class="${cellClass} ${statusClass}">${count}</td>`;
+        });
+        
+        html += `</tr>`;
+        console.log(html);
+    });
+
+    console.log('Risk Matrix HTML:', html);
+    console.log('Projects data for matrix:', projects.map(p => ({name: p.name, priority: p.priority, status: p.status})));
+    
+    riskMatrixBody.innerHTML = html;
+}
+
+function renderRiskDetails() {
+    const riskDetailsBody = document.getElementById('risk-details-body');
+    if (!riskDetailsBody) return;
+    
+    const statusLabels = {
+        'healthy': 'Tốt',
+        'warning': 'Cần Chú Ý',
+        'critical': 'Cần Hành Động'
+    };
+    
+    const priorityLabels = {
+        'high': 'Cao',
+        'medium': 'Trung Bình',
+        'low': 'Thấp'
+    };
+    
+    let html = '';
+    
+    if (projects.length === 0) {
+        html = '<tr><td colspan="5" style="text-align: center; padding: 20px; color: #666;">Không có dự án nào.</td></tr>';
+    } else {
+        projects.forEach(project => {
+            html += `
+                <tr>
+                    <td><strong>${project.name}</strong></td>
+                    <td><span class="status-badge ${project.status}">${statusLabels[project.status]}</span></td>
+                    <td><span class="priority-badge ${project.priority}">${priorityLabels[project.priority]}</span></td>
+                    <td>${project.risks || 'Không có'}</td>
+                    <td>${project.solutions || 'Không có'}</td>
+                </tr>
+            `;
+        });
+    }
+    
+    riskDetailsBody.innerHTML = html;
+}

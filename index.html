@@ -95,37 +95,50 @@
                     </div>
                 </div>
 
-                <div class="issues-container">
-                    <h3>Các Vấn Đề Nổi Bật & Cần Ra Quyết Định</h3>
-                    <div class="issues-list">
-                        <div class="issue-item green">
-                            <div class="issue-icon">
-                                <i class="fas fa-arrow-up"></i>
-                            </div>
-                            <div class="issue-content">
-                                <h4>Nền tảng cho thuê xe</h4>
-                                <p>Việc tích hợp vị điện tử có thể không đạt timeline 15/07. Cần làm rõ yêu cầu lương vận hành của BO cho đơn Chauffeur.</p>
-                            </div>
-                        </div>
-                        <div class="issue-item yellow">
-                            <div class="issue-icon">
-                                <i class="fas fa-clock"></i>
-                            </div>
-                            <div class="issue-content">
-                                <h4>Nền tảng mua bán xe cũ</h4>
-                                <p>Có rủi ro trễ deadline do phụ thuộc vào thời gian đánh giá ANBM và scope lớn trong khi nguồn lực IT hạn chế.</p>
-                            </div>
-                        </div>
-                        <div class="issue-item yellow">
-                            <div class="issue-icon">
-                                <i class="fas fa-exclamation"></i>
-                            </div>
-                            <div class="issue-content">
-                                <h4>Hệ thống Dealer portal</h4>
-                                <p>Cần thông nhất lại timeline với Cara vì có nhiều yêu cầu mới sau phiên bản MVP ngày 20/06.</p>
-                            </div>
+                <div class="risk-map-container">
+                    
+                    
+                    <div class="risk-matrix-section">
+                        
+                        <div class="table-container">
+                            <h3><i class="fas fa-exclamation-triangle"></i> Risk Map - Bản Đồ Rủi Ro</h3>
+                            <table class="risk-matrix-table">
+                                <thead>
+                                    <tr>
+                                        <th>Ưu Tiên \ Trạng Thái</th>
+                                        <th>Tốt (Healthy)</th>
+                                        <th>Cần Chú Ý (Warning)</th>
+                                        <th>Cần Hành Động (Critical)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="risk-matrix-body">
+                                    <!-- Risk matrix content will be populated by JavaScript -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
+                    
+                    
+                </div>
+            </div>
+            <div class="risk-details-section">
+                        
+                <div class="table-container">
+                    <h4>Chi Tiết Rủi Ro theo Dự Án</h4>
+                    <table class="risk-details-table">
+                        <thead>
+                            <tr>
+                                <th>Dự Án</th>
+                                <th>Trạng Thái</th>
+                                <th>Ưu Tiên</th>
+                                <th>Rủi Ro Chính</th>
+                                <th>Giải Pháp</th>
+                            </tr>
+                        </thead>
+                        <tbody id="risk-details-body">
+                            <!-- Risk details content will be populated by JavaScript -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
