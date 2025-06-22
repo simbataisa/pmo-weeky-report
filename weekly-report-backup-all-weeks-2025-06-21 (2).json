@@ -1,0 +1,164 @@
+{
+  "weeks": [
+    {
+      "week": "24",
+      "year": "2025",
+      "projects": [
+        {
+          "id": 1,
+          "name": "Nền tảng cho thuê xe",
+          "manager": "Phạm Hoàng Hải",
+          "status": "warning",
+          "description": "Đã hoàn thiện thuê xe tự lái. Đang phát triển dịch vụ Chauffeur. BO yêu cầu năng cấp thêm.",
+          "nextWeekTasks": "Go-live giá lẻ Tết. Cấp nhật miền sạc. Go-live giá thuê xe sân bay.",
+          "risks": "Rủi ro trễ timeline (15/07) tích hợp vị điện tử. Chưa rõ yêu cầu lương vận hành Chauffeur.",
+          "priority": "medium",
+          "solutions": "Go-live nhưng sách giá thuê xe sân bay",
+          "startDate": "2025-01-01",
+          "endDate": "2025-07-15",
+          "progress": 65
+        },
+        {
+          "id": 2,
+          "name": "Nền tảng mua bán xe cũ",
+          "manager": "PO Nguyễn Đăng Thái",
+          "status": "warning",
+          "description": "Đã thông lượng Dealer đăng tin và nhận lead (cần sua lỗi). Đang setup nền tảng VHM cho Cara.",
+          "nextWeekTasks": "09/06: Xác định cấu phần & bước tiếp theo.",
+          "risks": "Rủi ro trễ deadline do phụ thuộc đánh giá ANBM và scope lớn.",
+          "priority": "medium",
+          "solutions": "09/06: Xác định cấu phần",
+          "startDate": "2025-02-01",
+          "endDate": "2025-09-30",
+          "progress": 40
+        },
+        {
+          "id": 3,
+          "name": "Hệ thống Dealer portal",
+          "manager": "PO Nguyễn Đăng Thái",
+          "status": "warning",
+          "description": "Đang thực hiện customize VHM Marketplace.",
+          "nextWeekTasks": "Tiếp tục customize VHM Marketplace.",
+          "risks": "Cần align lại timeline với Cara do có nhiều request mới.",
+          "priority": "medium",
+          "solutions": "20/06: Ra mắt bản MVP",
+          "startDate": "2025-03-01",
+          "endDate": "2025-06-20",
+          "progress": 75
+        },
+        {
+          "id": 4,
+          "name": "Hệ thống Quản lý kho xe",
+          "manager": "Phạm Hoàng Hải",
+          "status": "healthy",
+          "description": "Đã bàn giao Vận hành IT. Đang chạy song song đánh giá ANBM.",
+          "nextWeekTasks": "Đánh giá lại process ANBM.",
+          "risks": "Không có",
+          "priority": "low",
+          "solutions": "Đã bàn giao Vận hành IT",
+          "startDate": "2025-01-15",
+          "endDate": "2025-05-30",
+          "progress": 90
+        },
+        {
+          "id": 5,
+          "name": "Hệ thống Quản lý vận hành xe",
+          "manager": "PO Nguyễn Đăng Thái",
+          "status": "critical",
+          "description": "Đã chốt yêu cầu với Vận hành. Dự án đã kick off và chia phase.",
+          "nextWeekTasks": "Kick off dự án vào 09/06/2025.",
+          "risks": "Không có",
+          "priority": "high",
+          "solutions": "Phase 1: Bàn giao TB",
+          "startDate": "2025-06-09",
+          "endDate": "2025-12-31",
+          "progress": 10
+        }
+      ],
+      "savedAt": "2025-06-21T15:46:41.362Z"
+    },
+    {
+      "week": 23,
+      "year": 2025,
+      "projects": [
+        {
+          "id": 1,
+          "name": "Nền tảng cho thuê xe",
+          "manager": "Phạm Hoàng Hải",
+          "status": "warning",
+          "description": "Đã hoàn thiện thuê xe tự lái. Đang phát triển dịch vụ Chauffeur. BO yêu cầu năng cấp thêm.",
+          "nextWeekTasks": "Go-live giá lẻ Tết. Cấp nhật miền sạc. Go-live giá thuê xe sân bay.",
+          "risks": "Rủi ro trễ timeline (15/07) tích hợp vị điện tử. Chưa rõ yêu cầu lương vận hành Chauffeur.",
+          "priority": "medium",
+          "solutions": "Go-live nhưng sách giá thuê xe sân bay",
+          "startDate": "2025-01-01",
+          "endDate": "2025-07-15",
+          "progress": 65
+        },
+        {
+          "id": 2,
+          "name": "Nền tảng mua bán xe cũ",
+          "manager": "PO Nguyễn Đăng Thái",
+          "status": "warning",
+          "description": "Đã thông lượng Dealer đăng tin và nhận lead (cần sua lỗi). Đang setup nền tảng VHM cho Cara.",
+          "nextWeekTasks": "09/06: Xác định cấu phần & bước tiếp theo.",
+          "risks": "Rủi ro trễ deadline do phụ thuộc đánh giá ANBM và scope lớn.",
+          "priority": "medium",
+          "solutions": "09/06: Xác định cấu phần",
+          "startDate": "2025-02-01",
+          "endDate": "2025-09-30",
+          "progress": 40
+        },
+        {
+          "id": 3,
+          "name": "Hệ thống Dealer portal",
+          "manager": "PO Nguyễn Đăng Thái",
+          "status": "warning",
+          "description": "Đang thực hiện customize VHM Marketplace.",
+          "nextWeekTasks": "Tiếp tục customize VHM Marketplace.",
+          "risks": "Cần align lại timeline với Cara do có nhiều request mới.",
+          "priority": "medium",
+          "solutions": "20/06: Ra mắt bản MVP",
+          "startDate": "2025-03-01",
+          "endDate": "2025-06-20",
+          "progress": 75
+        },
+        {
+          "id": 4,
+          "name": "Hệ thống Quản lý kho xe",
+          "manager": "Phạm Hoàng Hải",
+          "status": "healthy",
+          "description": "Đã bàn giao Vận hành IT. Đang chạy song song đánh giá ANBM.",
+          "nextWeekTasks": "Đánh giá lại process ANBM.",
+          "risks": "Không có",
+          "priority": "low",
+          "solutions": "Đã bàn giao Vận hành IT",
+          "startDate": "2025-01-15",
+          "endDate": "2025-05-30",
+          "progress": 90
+        },
+        {
+          "id": 5,
+          "name": "Hệ thống Quản lý vận hành xe",
+          "manager": "PO Nguyễn Đăng Thái",
+          "status": "critical",
+          "description": "Đã chốt yêu cầu với Vận hành. Dự án đã kick off và chia phase.",
+          "nextWeekTasks": "Kick off dự án vào 09/06/2025.",
+          "risks": "Không có",
+          "priority": "high",
+          "solutions": "Phase 1: Bàn giao TB",
+          "startDate": "2025-06-09",
+          "endDate": "2025-12-31",
+          "progress": 10
+        }
+      ],
+      "savedAt": "2025-06-21T15:46:30.082Z"
+    }
+  ],
+  "currentWeek": {
+    "week": "24",
+    "year": "2025"
+  },
+  "exportDate": "2025-06-21T15:46:41.362Z",
+  "version": "2.1"
+}
