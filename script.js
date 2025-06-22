@@ -455,12 +455,12 @@ function editProject(id) {
 }
 
 function deleteProject(id) {
-    if (confirm('Bạn có chắc chắn muốn xóa dự án này?')) {
+    showConfirmPopup('Bạn có chắc chắn muốn xóa dự án này?', function() {
         projects = projects.filter(p => p.id !== id);
         updateStats();
         renderProjects();
         drawStatusChart();
-    }
+    });
 }
 
 function closeModal() {
@@ -559,7 +559,7 @@ function exportReport() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
-    alert('Báo cáo đã được xuất thành công!');
+    showPopup('Báo cáo đã được xuất thành công!', 'success');
 }
 
 // Save settings function
@@ -575,7 +575,7 @@ function saveSettings() {
     // Update the copy dropdown to sync with the new current week
     // updatePreviousWeekOptions(); // Removed - selectbox no longer exists
     
-    alert('Cài đặt đã được lưu!');
+    showPopup('Cài đặt đã được lưu!', 'success');
 }
 
 // Load project data for the currently selected week/year
@@ -634,7 +634,7 @@ function exportCurrentWeek() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
-    alert(`Đã xuất dữ liệu tuần ${currentWeek}/${currentYear} thành công!`);
+    showPopup(`Đã xuất dữ liệu tuần ${currentWeek}/${currentYear} thành công!`, 'success');
 }
 
 // Export all weeks data for backup
@@ -707,7 +707,7 @@ function exportAllWeeks() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
-    alert(`Đã xuất backup thành công! (${weekCount} tuần)`);
+    showPopup(`Đã xuất backup thành công! (${weekCount} tuần)`, 'success');
 }
 
 // Legacy function for backward compatibility
@@ -741,7 +741,7 @@ function importData(event) {
             }
             
         } catch (error) {
-            alert(`Lỗi khi import dữ liệu: ${error.message}`);
+            showPopup(`Lỗi khi import dữ liệu: ${error.message}`, 'error');
         }
     };
     
@@ -845,7 +845,7 @@ function importMultiWeekData(data) {
     
     const message = `Đã import thành công ${importedWeeks} tuần!`;
     const clearMessage = clearedWeeks > 0 ? `\n(Đã xóa ${clearedWeeks} tuần cũ và thay thế hoàn toàn)` : '';
-    alert(message + clearMessage);
+    showPopup(message + clearMessage, 'success');
 }
 
 // Import single-week data (legacy version 1.0)
@@ -933,7 +933,7 @@ function importSingleWeekData(data) {
     
     const message = `Đã import thành công ${data.projects.length} dự án!`;
     const clearMessage = clearedWeeks > 0 ? `\n(Đã xóa ${clearedWeeks} tuần cũ và thay thế hoàn toàn)` : '';
-    alert(message + clearMessage);
+    showPopup(message + clearMessage, 'success');
 }
 
 // Close modal when clicking outside
@@ -979,7 +979,7 @@ function createNewWeeklyReport() {
     const copyMessage = shouldCopyData ? '\nDữ liệu tuần hiện tại sẽ được copy sang tuần mới.' : '\nDữ liệu tuần mới sẽ được reset.';
     const confirmMessage = `Tạo báo cáo mới cho Tuần ${nextWeek} - ${nextYear}?\nDữ liệu hiện tại sẽ được lưu trữ.${copyMessage}`;
     
-    if (confirm(confirmMessage)) {
+    showConfirmPopup(confirmMessage, function() {
         // Save current data with timestamp
         const currentData = {
             week: currentWeek,
@@ -1062,14 +1062,14 @@ function createNewWeeklyReport() {
         const successMessage = shouldCopyData 
             ? `Đã tạo báo cáo mới cho Tuần ${nextWeek} - ${nextYear}!\nDữ liệu tuần trước đã được lưu trữ và copy sang tuần mới.`
             : `Đã tạo báo cáo mới cho Tuần ${nextWeek} - ${nextYear}!\nDữ liệu tuần trước đã được lưu trữ và tuần mới đã được reset.`;
-        alert(successMessage);
-    }
+        showPopup(successMessage, 'success');
+    });
 }
 
 // Copy data from previous week (function removed - selectbox no longer available)
 // This function has been disabled as the week selection dropdown was removed
 function copyPreviousWeekData() {
-    alert('Chức năng copy dữ liệu tuần trước đã bị vô hiệu hóa.');
+    showPopup('Chức năng copy dữ liệu tuần trước đã bị vô hiệu hóa.', 'info');
 }
 
 // updatePreviousWeekOptions function removed - selectbox no longer exists
@@ -1251,6 +1251,132 @@ function getWeekNumber(date) {
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
     return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
 }
+
+// Custom Popup Functions
+function showPopup(message, type = 'info', title = '') {
+    const overlay = document.getElementById('popup-overlay');
+
+    const modal = overlay.querySelector('.popup-modal');
+    const titleElement = modal.querySelector('.popup-title');
+    const messageElement = modal.querySelector('.popup-message');
+    const iconElement = modal.querySelector('.popup-icon');
+    const okBtn = modal.querySelector('.popup-btn-primary');
+    const cancelBtn = modal.querySelector('.popup-btn-secondary');
+    const yesBtn = modal.querySelector('.popup-btn-danger');
+    
+    // Reset button visibility
+    okBtn.style.display = 'inline-block';
+    cancelBtn.style.display = 'none';
+    yesBtn.style.display = 'none';
+    
+    // Set title based on type if not provided
+    if (!title) {
+        switch(type) {
+            case 'success':
+                title = 'Thành công';
+                break;
+            case 'error':
+                title = 'Lỗi';
+                break;
+            case 'info':
+            default:
+                title = 'Thông báo';
+                break;
+        }
+    }
+    
+    // Set icon based on type
+    switch(type) {
+        case 'success':
+            iconElement.className = 'popup-icon fas fa-check-circle';
+            break;
+        case 'error':
+            iconElement.className = 'popup-icon fas fa-exclamation-circle';
+            break;
+        case 'info':
+        default:
+            iconElement.className = 'popup-icon fas fa-info-circle';
+            break;
+    }
+    
+    titleElement.textContent = title;
+    messageElement.textContent = message;
+    
+    // Remove existing type classes
+    modal.classList.remove('popup-success', 'popup-error', 'popup-info');
+    
+    // Add appropriate type class
+    modal.classList.add(`popup-${type}`);
+    
+    // Show the popup
+    overlay.classList.add('show');
+    
+    // Auto-close after 3 seconds for success messages
+    if (type === 'success') {
+        setTimeout(() => {
+            closePopup();
+        }, 3000);
+    }
+}
+
+function showConfirmPopup(message, onConfirm, title = 'Xác nhận') {
+    const overlay = document.getElementById('popup-overlay');
+    const modal = overlay.querySelector('.popup-modal');
+    const titleElement = modal.querySelector('.popup-title');
+    const messageElement = modal.querySelector('.popup-message');
+    const iconElement = modal.querySelector('.popup-icon');
+    const okBtn = modal.querySelector('.popup-btn-primary');
+    const cancelBtn = modal.querySelector('.popup-btn-secondary');
+    const yesBtn = modal.querySelector('.popup-btn-danger');
+    
+    // Set up confirmation dialog
+    okBtn.style.display = 'none';
+    cancelBtn.style.display = 'inline-block';
+    yesBtn.style.display = 'inline-block';
+    
+    titleElement.textContent = title;
+    messageElement.textContent = message;
+    iconElement.className = 'popup-icon fas fa-question-circle';
+    
+    // Remove existing type classes and add warning style
+    modal.classList.remove('popup-success', 'popup-error', 'popup-info');
+    modal.classList.add('popup-info');
+    
+    // Set up button handlers
+    yesBtn.onclick = function() {
+        closePopup();
+        if (onConfirm) onConfirm();
+    };
+    
+    cancelBtn.onclick = function() {
+        closePopup();
+    };
+    
+    // Show the popup
+    overlay.classList.add('show');
+}
+
+function closePopup() {
+    const overlay = document.getElementById('popup-overlay');
+    overlay.classList.remove('show');
+}
+
+// Close popup when clicking outside the modal
+document.addEventListener('DOMContentLoaded', function() {
+    const overlay = document.getElementById('popup-overlay');
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) {
+            closePopup();
+        }
+    });
+    
+    // Close popup with Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closePopup();
+        }
+    });
+});
 
 // Initialize dropdowns and previous week options on page load
 document.addEventListener('DOMContentLoaded', function() {

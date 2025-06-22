@@ -282,6 +282,27 @@
         </div>
     </div>
 
+    <!-- Custom Popup Modal -->
+    <div id="popup-overlay" class="popup-overlay">
+        <div class="popup-modal">
+            <div class="popup-header">
+                <i class="popup-icon"></i>
+                <h3 class="popup-title"></h3>
+                <button class="popup-close" onclick="closePopup()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="popup-content">
+                <p class="popup-message"></p>
+            </div>
+            <div class="popup-footer">
+                <button class="popup-btn popup-btn-primary" onclick="closePopup()">OK</button>
+                <button class="popup-btn popup-btn-secondary" onclick="closePopup()" style="display: none;">Hủy</button>
+                <button class="popup-btn popup-btn-danger" onclick="closePopup()" style="display: none;">Có</button>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
