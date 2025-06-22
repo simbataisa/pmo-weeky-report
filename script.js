@@ -605,10 +605,42 @@ function createDashboardPDFContent() {
                 </div>
             </div>
             
+            <div style="margin-bottom: 30px;">
+                <h3 style="color: #555; margin-bottom: 15px;">Ma Trận Rủi Ro theo Trạng Thái & Ưu Tiên</h3>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                        <thead>
+                            <tr style="background-color: #f8f9fa;">
+                                <th style="padding: 12px; text-align: center; border: 1px solid #ddd; font-weight: bold;">Ưu Tiên \\ Trạng Thái</th>
+                                <th style="padding: 12px; text-align: center; border: 1px solid #ddd; background-color: #d4edda; color: #155724; font-weight: bold;">Tốt (Healthy)</th>
+                                <th style="padding: 12px; text-align: center; border: 1px solid #ddd; background-color: #fff3cd; color: #856404; font-weight: bold;">Cần Chú Ý (Warning)</th>
+                                <th style="padding: 12px; text-align: center; border: 1px solid #ddd; background-color: #f8d7da; color: #721c24; font-weight: bold;">Cần Hành Động (Critical)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${createRiskMatrixRows()}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
             <div>
-                <h3 style="color: #555; margin-bottom: 15px;">Các Vấn Đề Nổi Bật & Cần Ra Quyết Định</h3>
-                <div style="background: #f8f9fa; border-radius: 5px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    ${createIssuesList()}
+                <h3 style="color: #555; margin-bottom: 15px;">Chi Tiết Rủi Ro theo Dự Án</h3>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background-color: #f8f9fa;">
+                                <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Dự Án</th>
+                                <th style="padding: 12px; text-align: center; border: 1px solid #ddd;">Trạng Thái</th>
+                                <th style="padding: 12px; text-align: center; border: 1px solid #ddd;">Ưu Tiên</th>
+                                <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Rủi Ro Chính</th>
+                                <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Giải Pháp</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${createRiskDetailRows()}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -810,6 +842,155 @@ function createTimelineTableRows() {
                 </td>
                 <td style="padding: 12px; border: 1px solid #ddd; vertical-align: top;">
                     ${project.manager || 'Chưa phân công'}
+                </td>
+            </tr>
+        `;
+    });
+    
+    return rowsHtml;
+}
+
+// Helper function to create Risk Map PDF content
+function createRiskMapPDFContent() {
+    // Create risk map section
+    let content = `
+        <div style="margin-bottom: 30px; page-break-before: always;">
+            <h2 style="color: #007bff; border-bottom: 1px solid #ddd; padding-bottom: 10px; margin-bottom: 20px;">Risk Map - Bản Đồ Rủi Ro</h2>
+            
+            <div style="margin-bottom: 20px;">
+                <p style="color: #666; margin-bottom: 15px;">Bản đồ rủi ro phân loại các dự án theo mức độ rủi ro và ưu tiên để hỗ trợ việc ra quyết định quản lý.</p>
+            </div>
+            
+            <div style="margin-bottom: 30px;">
+                <h3 style="color: #555; margin-bottom: 15px;">Ma Trận Rủi Ro theo Trạng Thái & Ưu Tiên</h3>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                        <thead>
+                            <tr style="background-color: #f8f9fa;">
+                                <th style="padding: 12px; text-align: center; border: 1px solid #ddd; font-weight: bold;">Ưu Tiên \\ Trạng Thái</th>
+                                <th style="padding: 12px; text-align: center; border: 1px solid #ddd; background-color: #d4edda; color: #155724; font-weight: bold;">Tốt (Healthy)</th>
+                                <th style="padding: 12px; text-align: center; border: 1px solid #ddd; background-color: #fff3cd; color: #856404; font-weight: bold;">Cần Chú Ý (Warning)</th>
+                                <th style="padding: 12px; text-align: center; border: 1px solid #ddd; background-color: #f8d7da; color: #721c24; font-weight: bold;">Cần Hành Động (Critical)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${createRiskMatrixRows()}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 30px;">
+                <h3 style="color: #555; margin-bottom: 15px;">Chi Tiết Rủi Ro theo Dự Án</h3>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background-color: #f8f9fa;">
+                                <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Dự Án</th>
+                                <th style="padding: 12px; text-align: center; border: 1px solid #ddd;">Trạng Thái</th>
+                                <th style="padding: 12px; text-align: center; border: 1px solid #ddd;">Ưu Tiên</th>
+                                <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Rủi Ro Chính</th>
+                                <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Giải Pháp</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${createRiskDetailRows()}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    return content;
+}
+
+// Helper function to create risk matrix rows
+function createRiskMatrixRows() {
+    const priorities = ['high', 'medium', 'low'];
+    const priorityLabels = { 'high': 'Cao', 'medium': 'Trung Bình', 'low': 'Thấp' };
+    const statuses = ['healthy', 'warning', 'critical'];
+    
+    let rowsHtml = '';
+    
+    priorities.forEach(priority => {
+        const priorityColor = priority === 'high' ? '#dc3545' : 
+                             priority === 'medium' ? '#ffc107' : '#28a745';
+        
+        rowsHtml += `
+            <tr>
+                <td style="padding: 12px; border: 1px solid #ddd; text-align: center; font-weight: bold; background-color: #f8f9fa; color: ${priorityColor};">
+                    ${priorityLabels[priority]}
+                </td>
+        `;
+        
+        statuses.forEach(status => {
+            const projectsInCell = projects.filter(p => 
+                (p.priority || 'medium') === priority && p.status === status
+            );
+            
+            const cellBgColor = status === 'healthy' ? '#d4edda' : 
+                               status === 'warning' ? '#fff3cd' : '#f8d7da';
+            
+            rowsHtml += `
+                <td style="padding: 12px; border: 1px solid #ddd; vertical-align: top; background-color: ${cellBgColor};">
+                    ${projectsInCell.length > 0 ? 
+                        projectsInCell.map(p => `<div style="margin-bottom: 5px; font-size: 12px;">• ${p.name}</div>`).join('') : 
+                        '<div style="text-align: center; color: #666; font-style: italic;">Không có dự án</div>'
+                    }
+                </td>
+            `;
+        });
+        
+        rowsHtml += '</tr>';
+    });
+    
+    return rowsHtml;
+}
+
+// Helper function to create risk detail rows
+function createRiskDetailRows() {
+    if (projects.length === 0) {
+        return '<tr><td colspan="5" style="padding: 20px; text-align: center; color: #666;">Không có dự án nào để hiển thị.</td></tr>';
+    }
+    
+    let rowsHtml = '';
+    
+    projects.forEach(project => {
+        // Get status color and text
+        const statusColor = project.status === 'healthy' ? '#28a745' : 
+                           project.status === 'warning' ? '#ffc107' : '#dc3545';
+        const statusText = project.status === 'healthy' ? 'Tốt' : 
+                          project.status === 'warning' ? 'Cần chú ý' : 'Cần hành động';
+        
+        // Get priority color and text
+        const priority = project.priority || 'medium';
+        const priorityColor = priority === 'high' ? '#dc3545' : 
+                             priority === 'medium' ? '#ffc107' : '#28a745';
+        const priorityText = priority === 'high' ? 'Cao' : 
+                            priority === 'medium' ? 'Trung Bình' : 'Thấp';
+        
+        // Clean up risks and solutions text
+        const risks = project.risks && project.risks !== 'Không có' ? project.risks : 'Không có rủi ro đặc biệt';
+        const solutions = project.solutions || 'Chưa có giải pháp cụ thể';
+        
+        rowsHtml += `
+            <tr>
+                <td style="padding: 12px; border: 1px solid #ddd; vertical-align: top;">
+                    <strong>${project.name}</strong>
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">${project.manager || 'Chưa phân công'}</div>
+                </td>
+                <td style="padding: 12px; border: 1px solid #ddd; text-align: center; vertical-align: top;">
+                    <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span>
+                </td>
+                <td style="padding: 12px; border: 1px solid #ddd; text-align: center; vertical-align: top;">
+                    <span style="color: ${priorityColor}; font-weight: bold;">${priorityText}</span>
+                </td>
+                <td style="padding: 12px; border: 1px solid #ddd; vertical-align: top; font-size: 13px;">
+                    ${risks}
+                </td>
+                <td style="padding: 12px; border: 1px solid #ddd; vertical-align: top; font-size: 13px;">
+                    ${solutions}
                 </td>
             </tr>
         `;
