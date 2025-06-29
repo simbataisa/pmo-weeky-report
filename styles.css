@@ -1661,3 +1661,51 @@ header h1 i {
         padding: 12px 20px 20px;
     }
 }
+
+/* Quill Rich Text Editor Styles */
+.quill-editor {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+.quill-editor .ql-toolbar {
+    border-bottom: 1px solid #ddd;
+    border-radius: 4px 4px 0 0;
+    background: #f8f9fa;
+}
+
+.quill-editor .ql-container {
+    border: none;
+    border-radius: 0 0 4px 4px;
+    font-family: inherit;
+    font-size: 14px;
+}
+
+.quill-editor .ql-editor {
+    min-height: 80px;
+    padding: 12px;
+    line-height: 1.5;
+}
+
+.quill-editor .ql-editor.ql-blank::before {
+    color: #999;
+    font-style: italic;
+}
+
+/* Mobile responsive for Quill editors */
+@media (max-width: 768px) {
+    .quill-editor .ql-toolbar {
+        padding: 8px;
+    }
+    
+    .quill-editor .ql-editor {
+        padding: 8px;
+        min-height: 60px;
+    }
+    
+    .quill-editor {
+        margin-bottom: 8px;
+    }
+}

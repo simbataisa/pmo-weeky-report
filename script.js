@@ -455,11 +455,11 @@ function editProject(id) {
     document.getElementById('project-progress').value = project.progress || 0;
     document.getElementById('project-start-date').value = project.startDate || '';
     document.getElementById('project-end-date').value = project.endDate || '';
-    document.getElementById('project-description').value = project.description;
-    document.getElementById('project-next-tasks').value = project.nextWeekTasks || '';
-    document.getElementById('project-risks').value = project.risks;
+    setQuillContent('project-description', project.description);
+    setQuillContent('project-next-tasks', project.nextWeekTasks || '');
+    setQuillContent('project-risks', project.risks);
     document.getElementById('project-priority').value = project.priority || 'medium';
-    document.getElementById('project-solutions').value = project.solutions;
+    setQuillContent('project-solutions', project.solutions);
     
     document.getElementById('projectModal').style.display = 'block';
 }
@@ -475,6 +475,13 @@ function deleteProject(id) {
 
 function closeModal() {
     document.getElementById('projectModal').style.display = 'none';
+    document.getElementById('project-form').reset();
+    
+    // Clear Quill editors
+    Object.keys(quillEditors).forEach(editorId => {
+        setQuillContent(editorId, '');
+    });
+    
     currentEditingProject = null;
 }
 
@@ -489,11 +496,11 @@ function handleProjectSubmit(event) {
         progress: parseInt(document.getElementById('project-progress').value) || 0,
         startDate: document.getElementById('project-start-date').value,
         endDate: document.getElementById('project-end-date').value,
-        description: document.getElementById('project-description').value,
-        nextWeekTasks: document.getElementById('project-next-tasks').value,
-        risks: document.getElementById('project-risks').value,
+        description: getQuillContent('project-description'),
+        nextWeekTasks: getQuillContent('project-next-tasks'),
+        risks: getQuillContent('project-risks'),
         priority: document.getElementById('project-priority').value,
-        solutions: document.getElementById('project-solutions').value
+        solutions: getQuillContent('project-solutions')
     };
     
     if (currentEditingProject) {
@@ -2220,3 +2227,79 @@ function renderRiskDetails() {
     
     riskDetailsBody.innerHTML = html;
 }
+
+// Rich Text Editor (Quill.js) Implementation
+let quillEditors = {};
+
+// Initialize Quill editors
+function initializeQuillEditors() {
+    const editorConfigs = {
+        'project-description': { required: true },
+        'project-next-tasks': { required: false },
+        'project-risks': { required: false },
+        'project-solutions': { required: false }
+    };
+
+    Object.keys(editorConfigs).forEach(editorId => {
+        const editorElement = document.getElementById(editorId);
+        if (editorElement) {
+            quillEditors[editorId] = new Quill(`#${editorId}`, {
+                theme: 'snow',
+                modules: {
+                    toolbar: [
+                        [{ 'header': [1, 2, 3, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'color': [] }, { 'background': [] }],
+                        ['link'],
+                        ['clean']
+                    ]
+                },
+                placeholder: 'Nhập nội dung...'
+            });
+
+            // Sync content with hidden input for form submission
+            quillEditors[editorId].on('text-change', function() {
+                const hiddenInput = document.getElementById(`${editorId}-hidden`);
+                if (hiddenInput) {
+                    hiddenInput.value = quillEditors[editorId].root.innerHTML;
+                }
+            });
+        }
+    });
+}
+
+// Get content from Quill editor
+function getQuillContent(editorId) {
+    if (quillEditors[editorId]) {
+        return quillEditors[editorId].root.innerHTML;
+    }
+    return '';
+}
+
+// Set content to Quill editor
+function setQuillContent(editorId, content) {
+    if (quillEditors[editorId]) {
+        quillEditors[editorId].root.innerHTML = content || '';
+        // Update hidden input
+        const hiddenInput = document.getElementById(`${editorId}-hidden`);
+        if (hiddenInput) {
+            hiddenInput.value = content || '';
+        }
+    }
+}
+
+// Initialize Quill editors when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Wait for Quill to be available
+    if (typeof Quill !== 'undefined') {
+        initializeQuillEditors();
+    } else {
+        // Retry after a short delay if Quill is not yet loaded
+        setTimeout(() => {
+            if (typeof Quill !== 'undefined') {
+                initializeQuillEditors();
+            }
+        }, 100);
+    }
+});
