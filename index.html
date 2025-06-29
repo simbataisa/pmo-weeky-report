@@ -157,6 +157,9 @@
                             <th>Tên Dự Án</th>
                             <th>Quản Lý</th>
                             <th>Tình Trạng</th>
+                            <th>Tiến Độ (%)</th>
+                            <th>Ngày Bắt Đầu</th>
+                            <th>Ngày Kết Thúc</th>
                             <th>Cấp Nhật & Chi Chú</th>
                             <th>Công Việc Tuần Tới</th>
                             <th>Vấn Đề/Rủi Ro</th>
@@ -281,6 +284,18 @@
                 <div class="form-group">
                     <label for="project-risks">Vấn đề/Rủi ro:</label>
                     <textarea id="project-risks" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="project-progress">Tiến độ (%):</label>
+                    <input type="number" id="project-progress" min="0" max="100" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="project-start-date">Ngày bắt đầu:</label>
+                    <input type="date" id="project-start-date">
+                </div>
+                <div class="form-group">
+                    <label for="project-end-date">Ngày kết thúc:</label>
+                    <input type="date" id="project-end-date">
                 </div>
                 <div class="form-group">
                     <label for="project-priority">Mức quan trọng:</label>

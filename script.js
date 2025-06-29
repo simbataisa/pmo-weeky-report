@@ -345,6 +345,9 @@ function createProjectRow(project) {
         <td><strong>${project.name}</strong></td>
         <td>${project.manager}</td>
         <td><span class="status-badge ${project.status}">${statusText[project.status]}</span></td>
+        <td>${project.progress || 0}%</td>
+        <td>${project.startDate || 'Chưa xác định'}</td>
+        <td>${project.endDate || 'Chưa xác định'}</td>
         <td>${project.description}</td>
         <td>${project.nextWeekTasks}</td>
         <td>${project.risks}</td>
@@ -449,6 +452,9 @@ function editProject(id) {
     document.getElementById('project-name').value = project.name;
     document.getElementById('project-manager').value = project.manager || '';
     document.getElementById('project-status').value = project.status;
+    document.getElementById('project-progress').value = project.progress || 0;
+    document.getElementById('project-start-date').value = project.startDate || '';
+    document.getElementById('project-end-date').value = project.endDate || '';
     document.getElementById('project-description').value = project.description;
     document.getElementById('project-next-tasks').value = project.nextWeekTasks || '';
     document.getElementById('project-risks').value = project.risks;
@@ -480,6 +486,9 @@ function handleProjectSubmit(event) {
         name: document.getElementById('project-name').value,
         manager: document.getElementById('project-manager').value,
         status: document.getElementById('project-status').value,
+        progress: parseInt(document.getElementById('project-progress').value) || 0,
+        startDate: document.getElementById('project-start-date').value,
+        endDate: document.getElementById('project-end-date').value,
         description: document.getElementById('project-description').value,
         nextWeekTasks: document.getElementById('project-next-tasks').value,
         risks: document.getElementById('project-risks').value,
