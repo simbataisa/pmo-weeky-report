@@ -680,7 +680,7 @@ function createDashboardExcelData() {
     data.push(['CÁC VẤN ĐỀ CHÍNH']);
     projects.forEach(project => {
         if (project.risks && project.risks.trim() !== '' && project.risks.toLowerCase() !== 'không có') {
-            data.push([`Rủi ro - ${project.name}:`, project.risks]);
+            data.push([`Rủi ro - ${project.name}:`, stripHtmlTags(project.risks)]);
         }
         if (project.status === 'critical' || project.status === 'warning') {
             data.push([`Dự án cần chú ý - ${project.name}:`, `Trạng thái: ${project.status}`]);
@@ -688,6 +688,16 @@ function createDashboardExcelData() {
     });
     
     return data;
+}
+
+// Helper function to strip HTML tags for Excel export
+function stripHtmlTags(html) {
+    if (!html) return '';
+    // Create a temporary div element to parse HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    // Get text content and clean up extra whitespace
+    return tempDiv.textContent || tempDiv.innerText || '';
 }
 
 // Helper function to create Projects Excel data
@@ -721,10 +731,10 @@ function createProjectsExcelData() {
             project.status,
             project.priority,
             project.progress,
-            project.description,
-            project.nextWeekTasks,
-            project.risks,
-            project.solutions,
+            stripHtmlTags(project.description),
+            stripHtmlTags(project.nextWeekTasks),
+            stripHtmlTags(project.risks),
+            stripHtmlTags(project.solutions),
             project.startDate,
             project.endDate
         ]);
@@ -817,8 +827,8 @@ function createRiskMapExcelData() {
             project.manager,
             project.status,
             project.priority,
-            project.risks || 'Không có',
-            project.solutions || 'Không có'
+            stripHtmlTags(project.risks) || 'Không có',
+            stripHtmlTags(project.solutions) || 'Không có'
         ]);
     });
     
