@@ -1674,13 +1674,8 @@ function importSingleWeekData(data) {
     showPopup(message + clearMessage, 'success');
 }
 
-// Close modal when clicking outside
-window.onclick = function(event) {
-    const modal = document.getElementById('projectModal');
-    if (event.target === modal) {
-        closeModal();
-    }
-}
+// Modal click outside functionality disabled to prevent accidental closing
+// Users can only close the modal using the close button or ESC key
 
 // Keyboard shortcuts
 document.addEventListener('keydown', function(event) {
